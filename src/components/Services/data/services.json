@@ -1,0 +1,601 @@
+{
+  "services": [
+    {
+      "id": "680e7c02bd9026931bcf281a",
+      "title": "FITNESS",
+      "slug": "fitness",
+      "shortDescription": "Dịch vụ tập luyện thể hình chuyên nghiệp với trang thiết bị hiện đại",
+      "fullDescription": "TMN Fitness cung cấp dịch vụ tập luyện thể hình với thiết bị hiện đại hàng đầu, đáp ứng mọi nhu cầu từ người mới bắt đầu đến vận động viên chuyên nghiệp. Chúng tôi tập trung vào việc cung cấp môi trường tập luyện an toàn, hiệu quả với sự hướng dẫn từ các huấn luyện viên được chứng nhận quốc tế.",
+      "mainImage": "https://media.gettyimages.com/id/546825853/photo/older-hispanic-woman-lifting-weights-in-living-room.jpg?s=612x612&w=0&k=20&c=ZWrlJG-qQUNjLLYh2RrvLIMLi7E_nYf1Fx3-cea4OVM=",
+      "images": [
+        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Trang thiết bị hiện đại từ các thương hiệu hàng đầu thế giới",
+        "Huấn luyện viên chuyên nghiệp với chứng chỉ quốc tế",
+        "Chương trình tập luyện được cá nhân hóa theo nhu cầu",
+        "Theo dõi tiến độ tập luyện qua ứng dụng di động",
+        "Không gian tập luyện rộng rãi, thoáng mát",
+        "Đội ngũ hỗ trợ 24/7 cho mọi vấn đề phát sinh"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "500.000₫", "duration": "1 tháng" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "1.200.000₫",
+          "duration": "3 tháng"
+        },
+        {
+          "name": "Gói cao cấp",
+          "price": "2.800.000₫",
+          "duration": "12 tháng"
+        },
+        {
+          "name": "Gói VIP",
+          "price": "4.500.000₫",
+          "duration": "12 tháng + PT"
+        }
+      ],
+      "instructors": [
+        {
+          "name": "Nguyễn Văn A",
+          "avatar": "https://images.unsplash.com/photo-1567013127542-490d757e6349?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Strength & Conditioning",
+          "experience": "8 năm"
+        },
+        {
+          "name": "Trần Thị B",
+          "avatar": "https://images.unsplash.com/photo-1611672585731-fa10603fb9e0?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Body Building",
+          "experience": "10 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Hai - Thứ Sáu", "time": "6:00 - 22:00" },
+        { "day": "Thứ Bảy - Chủ Nhật", "time": "8:00 - 21:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Minh Quân",
+          "rating": 5,
+          "comment": "Thiết bị hiện đại, huấn luyện viên nhiệt tình và chuyên nghiệp."
+        },
+        {
+          "user": "Thu Hà",
+          "rating": 4,
+          "comment": "Không gian thoáng, sạch sẽ. Giá hơi cao nhưng xứng đáng."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi chưa từng tập gym trước đây, có phù hợp không?",
+          "answer": "Hoàn toàn phù hợp! Chúng tôi có chương trình dành riêng cho người mới bắt đầu với sự hỗ trợ đặc biệt từ huấn luyện viên."
+        },
+        {
+          "question": "Có thể hủy hợp đồng giữa chừng không?",
+          "answer": "Có thể, tuy nhiên sẽ áp dụng phí hủy hợp đồng tùy theo thời gian còn lại và loại gói đăng ký."
+        }
+      ]
+    },
+    {
+      "id": "680e7df1bd9026931bcf283b",
+      "title": "DANCE COVER",
+      "slug": "dance-cover",
+      "shortDescription": "Khám phá niềm đam mê nhảy cùng các biên đạo hàng đầu",
+      "fullDescription": "TMN Dance Cover mang đến trải nghiệm khám phá nhịp điệu âm nhạc thông qua những bước nhảy sôi động. Với đội ngũ biên đạo tài năng và kinh nghiệm, chúng tôi giúp bạn học hỏi nhiều phong cách nhảy hiện đại, từ K-pop cover đến Hip-hop, Jazz, Contemporary và nhiều hơn nữa. Mỗi buổi học là một hành trình khám phá bản thân và tự tin thể hiện cá tính qua từng động tác.",
+      "mainImage": "https://media.gettyimages.com/id/1030366566/photo/sensual-couple-performing-an-artistic.jpg?s=612x612&w=0&k=20&c=9vhwAHZZNWP9FcC20VzhmpEcisbjurotlqjNzT-Hfbk=",
+      "images": [
+        "https://images.unsplash.com/photo-1551989745-347c28b620d9?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1546427660-eb346c344ba5?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1547153760-18fc86324498?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1594785332529-54398a53d049?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Học cùng các biên đạo từng hợp tác với nghệ sĩ nổi tiếng",
+        "Phòng tập chuyên nghiệp với hệ thống âm thanh, gương chất lượng cao",
+        "Nhiều phong cách nhảy đa dạng: K-pop, Hip-hop, Contemporary",
+        "Cơ hội tham gia các sự kiện, cuộc thi và biểu diễn",
+        "Lớp học theo nhóm và cá nhân linh hoạt",
+        "Hỗ trợ quay video, chỉnh sửa để học viên có sản phẩm chất lượng"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "800.000₫", "duration": "8 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "1.500.000₫",
+          "duration": "16 buổi"
+        },
+        { "name": "Gói cao cấp", "price": "3.000.000₫", "duration": "36 buổi" },
+        { "name": "Học 1:1", "price": "400.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Lê Minh",
+          "avatar": "https://images.unsplash.com/photo-1522075782449-e45a34f1ddfb?q=80&w=200&auto=format&fit=crop",
+          "specialty": "K-pop Dance",
+          "experience": "6 năm"
+        },
+        {
+          "name": "Hoàng Thảo",
+          "avatar": "https://images.unsplash.com/photo-1642914459698-593897ca5118?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Hip-hop & Contemporary",
+          "experience": "7 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Ba - Thứ Năm", "time": "18:00 - 21:00" },
+        { "day": "Thứ Bảy - Chủ Nhật", "time": "14:00 - 18:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Nam Anh",
+          "rating": 5,
+          "comment": "Các giáo viên rất chuyên nghiệp và nhiệt tình. Tôi đã học được rất nhiều."
+        },
+        {
+          "user": "Quỳnh Như",
+          "rating": 5,
+          "comment": "Không gian thoáng, âm thanh chất lượng, cộng đồng dancer rất thân thiện."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi chưa từng nhảy bao giờ, có thể tham gia không?",
+          "answer": "Tất nhiên! Chúng tôi có lớp dành cho người mới bắt đầu với những bước nhảy cơ bản, dễ tiếp cận."
+        },
+        {
+          "question": "Có giới hạn độ tuổi không?",
+          "answer": "Chúng tôi có các lớp học phù hợp cho mọi lứa tuổi, từ trẻ em (6 tuổi) đến người trưởng thành."
+        }
+      ]
+    },
+    {
+      "id": "680f1a0629b5f45b363274f6",
+      "title": "ZUMBA",
+      "slug": "zumba",
+      "shortDescription": "Đốt cháy calo với những điệu nhảy Zumba sôi động",
+      "fullDescription": "Zumba tại TMN Gym là sự kết hợp hoàn hảo giữa vũ đạo và thể dục nhịp điệu với âm nhạc Latin sôi động. Không chỉ là bộ môn giảm cân hiệu quả, Zumba còn mang đến niềm vui và năng lượng tích cực qua từng động tác. Các buổi tập được thiết kế phù hợp với mọi đối tượng, từ người mới bắt đầu đến những người đã có kinh nghiệm, giúp bạn đốt cháy calo mà không cảm thấy như đang tập luyện gò bó.",
+      "mainImage": "https://media.gettyimages.com/id/680886440/photo/exercising-at-the-gym.jpg?s=612x612&w=0&k=20&c=qc3lPk3k-yzz_HKhbuRtN8rfQDR8d3mDD6Xyv1YFC8E=",
+      "images": [
+        "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1518310952931-b1de897abd40?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Đốt calo hiệu quả (lên đến 600 calo/buổi) mà vẫn vui vẻ",
+        "Cải thiện sức khỏe tim mạch và hệ hô hấp",
+        "Nâng cao khả năng phối hợp và sự linh hoạt của cơ thể",
+        "Giảm stress và cải thiện tâm trạng nhờ âm nhạc sôi động",
+        "Phù hợp với mọi lứa tuổi và thể trạng",
+        "Huấn luyện viên được chứng nhận Zumba quốc tế"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "600.000₫", "duration": "8 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "1.100.000₫",
+          "duration": "16 buổi"
+        },
+        { "name": "Gói cao cấp", "price": "2.000.000₫", "duration": "32 buổi" },
+        { "name": "Vé lẻ", "price": "100.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Phương Linh",
+          "avatar": "https://images.unsplash.com/photo-1464863979621-258859e62245?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Zumba & Aerobic",
+          "experience": "5 năm"
+        },
+        {
+          "name": "Thanh Tùng",
+          "avatar": "https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Zumba Fitness",
+          "experience": "4 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Hai - Thứ Tư - Thứ Sáu", "time": "18:30 - 19:30" },
+        { "day": "Thứ Bảy", "time": "9:00 - 10:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Thanh Hương",
+          "rating": 5,
+          "comment": "Tuyệt vời! Đã giảm 4kg sau 2 tháng tham gia lớp Zumba."
+        },
+        {
+          "user": "Minh Đức",
+          "rating": 4,
+          "comment": "Huấn luyện viên rất năng động và truyền cảm hứng. Buổi học luôn đầy năng lượng."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi cần chuẩn bị gì khi tham gia lớp Zumba?",
+          "answer": "Bạn chỉ cần mặc quần áo thoải mái, giày thể thao và mang theo nước uống. Chúng tôi cung cấp khăn tại phòng tập."
+        },
+        {
+          "question": "Zumba có phù hợp cho người mới bắt đầu không?",
+          "answer": "Hoàn toàn phù hợp! Huấn luyện viên sẽ hướng dẫn từng bước và bạn có thể điều chỉnh cường độ theo thể lực của mình."
+        }
+      ]
+    },
+    {
+      "id": "680f1b1229b5f45b363274fd",
+      "title": "PERSONAL TRAINER",
+      "slug": "personal-trainer",
+      "shortDescription": "Chương trình huấn luyện cá nhân với HLV chuyên nghiệp",
+      "fullDescription": "Dịch vụ Personal Trainer tại TMN Gym là giải pháp tập luyện hiệu quả với sự hướng dẫn trực tiếp từ các huấn luyện viên chuyên nghiệp. Chúng tôi cam kết mang đến chương trình tập luyện được thiết kế riêng biệt, phù hợp với thể trạng, mục tiêu và thời gian của từng cá nhân. Với PT, bạn không chỉ được hướng dẫn kỹ thuật tập luyện đúng đắn mà còn nhận được lời khuyên về dinh dưỡng, lối sống để đạt kết quả tối ưu trong thời gian ngắn nhất.",
+      "mainImage": "https://media.gettyimages.com/id/1392310150/photo/young-man-helping-his-girlfriend-during-her-sports-training-in-a-health-club.jpg?s=612x612&w=0&k=20&c=db1uW5yKg04GawBIoAcFjHyy1TRnEd1OVAFfYaN76kY=",
+      "images": [
+        "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1571019613576-2b22c76fd955?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1574680096145-d05b474e2155?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Chương trình tập luyện cá nhân hóa 100% theo mục tiêu",
+        "Huấn luyện viên có chứng chỉ quốc tế với nhiều năm kinh nghiệm",
+        "Theo dõi tiến độ chi tiết qua các chỉ số cơ thể",
+        "Tư vấn dinh dưỡng và chế độ ăn uống phù hợp",
+        "Linh hoạt thời gian tập luyện theo lịch cá nhân",
+        "Kết quả nhanh chóng và hiệu quả gấp 3-4 lần tập luyện thông thường"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "3.500.000₫", "duration": "10 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "6.500.000₫",
+          "duration": "20 buổi"
+        },
+        { "name": "Gói VIP", "price": "15.000.000₫", "duration": "50 buổi" },
+        { "name": "Buổi dùng thử", "price": "500.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Hoàng Đức",
+          "avatar": "https://images.unsplash.com/photo-1504257432389-52343af06ae3?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Strength & Conditioning",
+          "experience": "10 năm"
+        },
+        {
+          "name": "Kim Ngân",
+          "avatar": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Fat Loss & Bodybuilding",
+          "experience": "7 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Hai - Chủ Nhật", "time": "6:00 - 22:00 (theo lịch hẹn)" }
+      ],
+      "reviews": [
+        {
+          "user": "Văn Phong",
+          "rating": 5,
+          "comment": "Sau 3 tháng với PT Hoàng Đức, tôi đã giảm 12kg và tăng đáng kể sức mạnh. Tuyệt vời!"
+        },
+        {
+          "user": "Mỹ Linh",
+          "rating": 5,
+          "comment": "PT Kim Ngân rất tâm huyết và chuyên môn cao. Cô ấy không chỉ hướng dẫn tập luyện mà còn động viên tôi rất nhiều."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Làm thế nào để chọn được PT phù hợp?",
+          "answer": "Chúng tôi sẽ tổ chức buổi tư vấn miễn phí để đánh giá nhu cầu, mục tiêu của bạn và giới thiệu PT phù hợp nhất."
+        },
+        {
+          "question": "Tôi có thể huỷ buổi tập không?",
+          "answer": "Có thể, nhưng phải báo trước ít nhất 24 giờ để tránh mất buổi. Mỗi gói PT được phép huỷ tối đa 3 buổi."
+        }
+      ]
+    },
+    {
+      "id": "680f1b4c29b5f45b36327500",
+      "title": "YOGA",
+      "slug": "yoga",
+      "shortDescription": "Tìm lại sự cân bằng cho thân - tâm - trí",
+      "fullDescription": "Yoga tại TMN Gym là sự kết hợp hoàn hảo giữa các động tác vật lý, kỹ thuật thở và thiền định, giúp cải thiện sức khỏe thể chất lẫn tinh thần. Các lớp học được thiết kế phù hợp với nhiều trình độ khác nhau, từ người mới bắt đầu đến người thực hành yoga lâu năm. Với không gian yên tĩnh, ánh sáng dịu nhẹ và không khí trong lành, chúng tôi tạo ra môi trường lý tưởng để bạn kết nối với bản thân, cải thiện sự dẻo dai và tìm thấy sự bình yên nội tại.",
+      "mainImage": "https://media.gettyimages.com/id/2155324511/photo/diverse-group-of-students-doing-crescent-lunge-pose-during-yoga-class.jpg?s=612x612&w=0&k=20&c=o59qnl_-jc8qhA0Gr3FTpnF6qTjguqlTr1AaZ4VOioA=",
+      "images": [
+        "https://images.unsplash.com/photo-1575052814086-f385e2e2ad1b?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1599447421416-3414500d18a5?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1603988363607-e1e4a66962c6?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1510894347713-fc3ed6fdf539?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Các phòng tập được thiết kế riêng với ánh sáng tự nhiên và không gian yên tĩnh",
+        "Giáo viên yoga được chứng nhận quốc tế với nhiều năm kinh nghiệm",
+        "Đa dạng phong cách: Hatha, Vinyasa, Yin Yoga, Power Yoga",
+        "Phụ kiện yoga cao cấp được cung cấp miễn phí (thảm, gạch, dây, bóng)",
+        "Lớp học với số lượng học viên giới hạn đảm bảo sự quan tâm cá nhân",
+        "Workshọp đặc biệt với các master yoga trong và ngoài nước hàng tháng"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "900.000₫", "duration": "8 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "1.600.000₫",
+          "duration": "16 buổi"
+        },
+        {
+          "name": "Gói không giới hạn",
+          "price": "2.500.000₫",
+          "duration": "1 tháng"
+        },
+        { "name": "Vé lẻ", "price": "150.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Trúc Phương",
+          "avatar": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Hatha & Yin Yoga",
+          "experience": "9 năm"
+        },
+        {
+          "name": "Minh Tuấn",
+          "avatar": "https://images.unsplash.com/photo-1562088287-bde35a1ea917?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Vinyasa & Power Yoga",
+          "experience": "7 năm"
+        }
+      ],
+      "schedule": [
+        {
+          "day": "Thứ Hai - Thứ Sáu",
+          "time": "6:00 - 7:00, 12:00 - 13:00, 18:00 - 20:00"
+        },
+        { "day": "Thứ Bảy - Chủ Nhật", "time": "7:00 - 10:00, 16:00 - 18:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Tuyết Mai",
+          "rating": 5,
+          "comment": "Không gian yên tĩnh, thầy cô chuyên nghiệp. Tôi cảm thấy thư giãn và thoải mái sau mỗi buổi tập."
+        },
+        {
+          "user": "Quốc Bảo",
+          "rating": 4,
+          "comment": "Yoga đã giúp tôi cải thiện đáng kể vấn đề đau lưng mạn tính. Rất hài lòng với chất lượng giảng dạy."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi chưa từng tập yoga, có thể tham gia không?",
+          "answer": "Tất nhiên! Chúng tôi có lớp dành riêng cho người mới bắt đầu với các động tác cơ bản và hướng dẫn chi tiết."
+        },
+        {
+          "question": "Tôi có cần mang thảm yoga của riêng mình không?",
+          "answer": "Không cần thiết. Chúng tôi cung cấp miễn phí thảm yoga và các phụ kiện cần thiết cho buổi tập."
+        }
+      ]
+    },
+    {
+      "id": "80f1c4729b5f45b36327503",
+      "title": "MUAY THAI",
+      "slug": "muay-thai",
+      "shortDescription": "Học võ thuật Thái Lan đỉnh cao, rèn luyện thể lực và kỹ năng tự vệ",
+      "fullDescription": "Muay Thai tại TMN Gym là nơi lý tưởng để trải nghiệm môn võ thuật Thái Lan đích thực. Được huấn luyện bởi các võ sư chuyên nghiệp với kinh nghiệm thi đấu quốc tế, học viên sẽ được học từ những kỹ thuật cơ bản đến nâng cao như đấm, đá, gối, cùi chỏ và các chiến thuật thi đấu. Không chỉ giúp rèn luyện sức mạnh, sự dẻo dai và khả năng tự vệ, Muay Thai còn là cách tuyệt vời để đốt cháy calo, giảm cân và xây dựng cơ bắp săn chắc.",
+      "mainImage": "https://media.gettyimages.com/id/618981846/photo/boxing-her-way-to-a-ripper-body.jpg?s=612x612&w=0&k=20&c=2SnDLdpS0VUHaNWmlrFlzHZReyHtezVEZhDLxWPatQs=",
+      "images": [
+        "https://images.unsplash.com/photo-1555597673-b21d5c935865?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1582645998834-4e0a066c4eff?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1658039658939-b5773bcb38a9?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1560736559-9b1c4a50dba5?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Huấn luyện bởi các võ sư chuyên nghiệp từ Thái Lan và Việt Nam",
+        "Trang thiết bị đạt chuẩn quốc tế: bao đấm, đích đá, găng tay, bao cát",
+        "Chương trình huấn luyện khoa học từ cơ bản đến nâng cao",
+        "Không gian tập luyện rộng rãi với sàn đấu chuẩn",
+        "Đốt cháy lên đến 1000 calo/buổi tập",
+        "Cơ hội tham gia các giải đấu nghiệp dư cho học viên tiềm năng"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "1.200.000₫", "duration": "12 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "2.200.000₫",
+          "duration": "24 buổi"
+        },
+        { "name": "Gói cao cấp", "price": "3.800.000₫", "duration": "48 buổi" },
+        { "name": "Tập 1:1", "price": "500.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Thái Sơn",
+          "avatar": "https://images.unsplash.com/photo-1613177794106-be20802b11d3?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Muay Thai",
+          "experience": "12 năm"
+        },
+        {
+          "name": "Kiatisak (Thái Lan)",
+          "avatar": "https://images.unsplash.com/photo-1555069918-2c67854e0f19?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Muay Thai Champion",
+          "experience": "15 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Hai - Thứ Sáu", "time": "7:00 - 8:30, 18:00 - 21:00" },
+        { "day": "Thứ Bảy - Chủ Nhật", "time": "9:00 - 11:30" }
+      ],
+      "reviews": [
+        {
+          "user": "Quang Huy",
+          "rating": 5,
+          "comment": "Huấn luyện viên chuyên nghiệp và tâm huyết. Tôi đã tập được 6 tháng và thấy sức khỏe cải thiện rõ rệt."
+        },
+        {
+          "user": "Thu Trang",
+          "rating": 5,
+          "comment": "Không chỉ học được kỹ năng tự vệ mà còn giảm được 8kg sau 3 tháng. Tuyệt vời!"
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi chưa có kinh nghiệm võ thuật, có thể tham gia không?",
+          "answer": "Hoàn toàn có thể! Chúng tôi có lớp dành riêng cho người mới bắt đầu với các kỹ thuật cơ bản và an toàn."
+        },
+        {
+          "question": "Cần chuẩn bị những gì khi tham gia lớp Muay Thai?",
+          "answer": "Ban đầu bạn chỉ cần mặc đồ thể thao thoải mái. Khi tập lâu dài, chúng tôi khuyến khích có găng tay, băng quấn, bảo hộ chân riêng."
+        }
+      ]
+    },
+    {
+      "id": "680f1cf029b5f45b36327506",
+      "title": "BOXING",
+      "slug": "boxing",
+      "shortDescription": "Rèn luyện sức mạnh và kỹ thuật quyền Anh chuyên nghiệp",
+      "fullDescription": "Boxing tại TMN Gym mang đến trải nghiệm tập luyện quyền Anh chuyên nghiệp với các huấn luyện viên giàu kinh nghiệm. Từ người mới bắt đầu đến các võ sĩ có kinh nghiệm, chúng tôi cung cấp chương trình huấn luyện phù hợp để phát triển kỹ thuật đấm, phản xạ, thể lực và chiến thuật thi đấu. Boxing không chỉ là môn võ thuật mà còn là bài tập cardio hiệu quả, giúp đốt cháy calo, giảm căng thẳng và xây dựng sự tự tin. Tham gia các buổi tập với cường độ cao, bạn sẽ cải thiện sức mạnh, sự nhanh nhẹn và độ bền của cơ thể.",
+      "mainImage": "https://media.gettyimages.com/id/481686206/photo/boxing-power.jpg?s=612x612&w=0&k=20&c=-zms0hnbqMWKd4oCRY_-99_aYNtvrEweZEMsgCgl_wE=",
+      "images": [
+        "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1517438322307-e67111335449?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1591117207239-788bf8de6c3b?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1605235186583-a8272b61f9fe?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Huấn luyện viên từng thi đấu chuyên nghiệp với nhiều năm kinh nghiệm",
+        "Trang thiết bị đạt chuẩn quốc tế: bao cát, găng tay, đích đấm, sàn đấu",
+        "Phương pháp giảng dạy khoa học kết hợp giữa kỹ thuật và thể lực",
+        "Lớp học được phân chia theo trình độ từ cơ bản đến nâng cao",
+        "Đốt cháy hiệu quả calo, giảm mỡ và tăng cơ săn chắc",
+        "Cơ hội tham gia các giải đấu nghiệp dư và bán chuyên"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "1.200.000₫", "duration": "12 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "2.200.000₫",
+          "duration": "24 buổi"
+        },
+        { "name": "Gói cao cấp", "price": "4.000.000₫", "duration": "48 buổi" },
+        { "name": "Tập 1:1", "price": "500.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Quốc Trung",
+          "avatar": "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Boxing Technique",
+          "experience": "10 năm"
+        },
+        {
+          "name": "Mike Wilson",
+          "avatar": "https://images.unsplash.com/photo-1567013127542-490d757e6349?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Professional Boxer",
+          "experience": "15 năm"
+        }
+      ],
+      "schedule": [
+        { "day": "Thứ Hai - Thứ Sáu", "time": "6:30 - 8:00, 18:30 - 21:00" },
+        { "day": "Thứ Bảy", "time": "8:30 - 11:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Đức Anh",
+          "rating": 5,
+          "comment": "Các huấn luyện viên rất chuyên nghiệp và tận tình. Tôi đã học được nhiều kỹ thuật và cải thiện thể lực rõ rệt."
+        },
+        {
+          "user": "Phương Thảo",
+          "rating": 4,
+          "comment": "Tôi rất thích lớp boxing tại đây. Không chỉ giúp giảm cân mà còn giải tỏa stress hiệu quả."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi là nữ, boxing có phù hợp không?",
+          "answer": "Hoàn toàn phù hợp! Chúng tôi có nhiều học viên nữ và boxing là bài tập tuyệt vời để rèn luyện sức khỏe, giảm cân và học kỹ năng tự vệ."
+        },
+        {
+          "question": "Tôi sợ bị đau khi tập boxing, có nguy hiểm không?",
+          "answer": "Các lớp học của chúng tôi tập trung vào kỹ thuật và thể lực với bao cát, đích đấm. Việc đối kháng (sparring) là tự nguyện và chỉ dành cho học viên đã có kinh nghiệm, với đầy đủ bảo hộ."
+        }
+      ]
+    },
+    {
+      "id": "680f1de629b5f45b36327509",
+      "title": "CYCLING",
+      "slug": "cycling",
+      "shortDescription": "Đạp xe trong nhà với âm nhạc sôi động và huấn luyện viên năng động",
+      "fullDescription": "Cycling tại TMN Gym là lớp tập đạp xe trong nhà (Indoor Cycling) với cường độ cao, kết hợp với âm nhạc sôi động và sự hướng dẫn của huấn luyện viên đầy năng lượng. Buổi tập kéo dài 45-60 phút, mô phỏng trải nghiệm đạp xe ngoài trời với các thay đổi về tốc độ và độ khó, từ đạp bằng phẳng đến leo dốc và sprint. Đây là bài tập cardio hiệu quả giúp đốt cháy calo, tăng cường sức khỏe tim mạch, đồng thời xây dựng sức mạnh cho phần thân dưới mà không gây áp lực lên các khớp.",
+      "mainImage": "https://media.gettyimages.com/id/909443742/photo/happy-black-athlete-practicing-on-exercise-bike-in-a-health-club.jpg?s=612x612&w=0&k=20&c=kceZHR0QxwGYan2a7HiFoM8kzxV196t_u7PZT5buYr4=",
+      "images": [
+        "https://images.unsplash.com/photo-1534787238916-9ba6764efd4f?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1520877745935-616158eb7fcc?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1517344884509-a0c97ec11bcc?q=80&w=1000&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1000&auto=format&fit=crop"
+      ],
+      "advantages": [
+        "Xe đạp cao cấp với hệ thống theo dõi nhịp tim và hiệu suất",
+        "Đốt cháy lên đến 800 calo trong một buổi tập",
+        "Phòng tập được trang bị hệ thống âm thanh và ánh sáng chuyên nghiệp",
+        "Giảm áp lực lên khớp so với chạy bộ - phù hợp với mọi độ tuổi",
+        "Huấn luyện viên giàu năng lượng với playlist âm nhạc cập nhật",
+        "Lịch học linh hoạt từ sáng sớm đến tối muộn"
+      ],
+      "priceRanges": [
+        { "name": "Gói cơ bản", "price": "800.000₫", "duration": "8 buổi" },
+        {
+          "name": "Gói tiêu chuẩn",
+          "price": "1.500.000₫",
+          "duration": "16 buổi"
+        },
+        {
+          "name": "Gói không giới hạn",
+          "price": "2.000.000₫",
+          "duration": "1 tháng"
+        },
+        { "name": "Vé lẻ", "price": "120.000₫", "duration": "1 buổi" }
+      ],
+      "instructors": [
+        {
+          "name": "Thanh Hà",
+          "avatar": "https://images.unsplash.com/photo-1548690312-e3b70d1a873b?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Cycling & HIIT",
+          "experience": "6 năm"
+        },
+        {
+          "name": "Quang Minh",
+          "avatar": "https://images.unsplash.com/photo-1601422407692-ec4eeec1d9b3?q=80&w=200&auto=format&fit=crop",
+          "specialty": "Endurance Cycling",
+          "experience": "8 năm"
+        }
+      ],
+      "schedule": [
+        {
+          "day": "Thứ Hai - Thứ Sáu",
+          "time": "6:00 - 7:00, 12:00 - 13:00, 18:00 - 20:00"
+        },
+        { "day": "Thứ Bảy", "time": "8:00 - 10:00" }
+      ],
+      "reviews": [
+        {
+          "user": "Lan Anh",
+          "rating": 5,
+          "comment": "Lớp học năng động với âm nhạc sôi động. Đã giúp tôi giảm 5kg sau 2 tháng tập luyện."
+        },
+        {
+          "user": "Xuân Thành",
+          "rating": 4,
+          "comment": "HLV Thanh Hà rất nhiệt tình và chuyên nghiệp. Mỗi buổi tập đều thử thách nhưng thú vị."
+        }
+      ],
+      "faq": [
+        {
+          "question": "Tôi chưa từng đạp xe, có thể tham gia không?",
+          "answer": "Hoàn toàn có thể! Huấn luyện viên sẽ hướng dẫn cách điều chỉnh xe và kỹ thuật đạp phù hợp với trình độ của bạn."
+        },
+        {
+          "question": "Cần chuẩn bị gì khi tham gia lớp Cycling?",
+          "answer": "Bạn chỉ cần mặc quần áo thể thao thoáng mát, mang theo nước và khăn. Nếu có, hãy đi giày cycling chuyên dụng, nếu không giày thể thao thông thường cũng được."
+        }
+      ]
+    }
+  ]
+}
