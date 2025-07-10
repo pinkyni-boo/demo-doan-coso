@@ -1,6 +1,9 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
+import { OAuth2Client } from "google-auth-library";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const signup = async (req, res) => {
   try {
@@ -107,5 +110,54 @@ export const login = async (req, res) => {
     res
       .status(500)
       .json({ message: "Đăng nhập thất bại", error: error.message });
+  }
+};
+
+export const googleLogin = async (req, res) => {
+  try {
+    const { tokenId } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, sub } = payload;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        username: email.split("@")[0],
+        email,
+        fullName: name,
+        password: sub, // random, không dùng để login thường
+        role: "user",
+      });
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_SECRET || "your-fallback-secret-key",
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        membership: user.membership,
+        phone: user.phone,
+        gender: user.gender,
+        dob: user.dob,
+        address: user.address,
+      },
+    });
+  } catch (error) {
+    console.error("Google login error:", error);
+    res.status(500).json({ message: "Đăng nhập Google thất bại" });
   }
 };

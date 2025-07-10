@@ -12,12 +12,14 @@ import {
   createUserByAdmin,
 } from "../controllers/userController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
+import { googleLogin } from "../controllers/authController.js";
 
 const router = express.Router();
 
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/google-login", googleLogin);
 
 // Protected routes (cần login) - cho phép cả user và admin
 router.get("/profile", verifyToken, getProfile);

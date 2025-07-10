@@ -25,11 +25,12 @@ import ViewClasses from "./components/Classes/index";
 import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import "./styles/vintage-global.css";
 
 // Wrap toàn bộ app content
-function App() {
+function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -134,4 +135,13 @@ function App() {
   );
 }
 
-export default App;
+const GOOGLE_CLIENT_ID = "95171768612-385ic851574oc5145p5pkn7319ok3vfr.apps.googleusercontent.com";
+const APP_NAME = "DACN-web"; // Đặt tên app ở đây
+
+export default function RootApp() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <App appName={APP_NAME} />
+    </GoogleOAuthProvider>
+  );
+}
