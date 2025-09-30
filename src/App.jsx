@@ -26,6 +26,7 @@ import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import FeedbackPage from "./components/Feedback/FeedbackPage"; // Đúng tên file
 
 import "./styles/vintage-global.css";
 
@@ -88,6 +89,8 @@ function App({ appName }) {
               <Route path="/classes" element={<ViewClasses />} />
               <Route path="/my-classes" element={<UserClasses />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/feedback/club/:clubId" element={<FeedbackPage />} />
 
               {/* Admin routes - tất cả qua dashboard */}
               <Route
@@ -135,7 +138,8 @@ function App({ appName }) {
   );
 }
 
-const GOOGLE_CLIENT_ID = "95171768612-385ic851574oc5145p5pkn7319ok3vfr.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  "95171768612-385ic851574oc5145p5pkn7319ok3vfr.apps.googleusercontent.com";
 const APP_NAME = "DACN-web"; // Đặt tên app ở đây
 
 export default function RootApp() {

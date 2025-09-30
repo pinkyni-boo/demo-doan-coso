@@ -20,6 +20,7 @@ import ClassManagement from "../ClassManagement";
 import AttendanceManagement from "../AttendanceManagement";
 import Statistics from "../Statistics";
 import UserManagement from "../UserManagement";
+import FeedbackManagement from "../FeedbackManagement";
 
 const AdminDashboard = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -45,6 +46,8 @@ const AdminDashboard = () => {
         return <AttendanceManagement />;
       case "stats":
         return <Statistics />;
+      case "feedback":
+        return <FeedbackManagement />;
       case "dashboard":
       default:
         return <DashboardHome setActiveModule={setActiveModule} />;
