@@ -87,6 +87,9 @@ const UserManagement = () => {
       address: "",
       dob: "",
       gender: "",
+      isAccountLocked: false,
+      lockReason: "",
+      lockUntil: "",
     });
   };
 
@@ -104,6 +107,9 @@ const UserManagement = () => {
         address: user.address || "",
         dob: user.dob ? user.dob.split("T")[0] : "",
         gender: user.gender || "",
+        isAccountLocked: user.isAccountLocked || false,
+        lockReason: user.lockReason || "",
+        lockUntil: user.lockUntil || "",
       });
     } else {
       resetForm();
@@ -188,13 +194,25 @@ const UserManagement = () => {
   });
 
   const getRoleColor = (role) => {
-    return role === "admin"
-      ? "bg-red-100 text-red-800"
-      : "bg-blue-100 text-blue-800";
+    switch (role) {
+      case "admin":
+        return "bg-red-100 text-red-800";
+      case "trainer":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-blue-100 text-blue-800";
+    }
   };
 
   const getRoleIcon = (role) => {
-    return role === "admin" ? <Shield size={14} /> : <User size={14} />;
+    switch (role) {
+      case "admin":
+        return <Shield size={14} />;
+      case "trainer":
+        return <User size={14} />;
+      default:
+        return <User size={14} />;
+    }
   };
 
   if (loading) {
@@ -264,6 +282,7 @@ const UserManagement = () => {
             >
               <option value="all">Tất cả vai trò</option>
               <option value="admin">Admin</option>
+              <option value="trainer">Huấn luyện viên</option>
               <option value="user">User</option>
             </select>
           </div>
@@ -366,16 +385,30 @@ const UserManagement = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(
-                        user.role
-                      )}`}
-                    >
-                      {getRoleIcon(user.role)}
-                      <span className="ml-1">
-                        {user.role === "admin" ? "Admin" : "Người dùng"}
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(
+                          user.role
+                        )}`}
+                      >
+                        {getRoleIcon(user.role)}
+                        <span className="ml-1">
+                          {user.role === "admin" 
+                            ? "Admin" 
+                            : user.role === "trainer" 
+                            ? "Huấn luyện viên" 
+                            : "Người dùng"}
+                        </span>
                       </span>
-                    </span>
+                      {user.isAccountLocked && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          </svg>
+                          Tài khoản đã bị khóa
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div>{user.email}</div>
@@ -529,8 +562,31 @@ const UserManagement = () => {
                   >
                     <option value="user">Người dùng</option>
                     <option value="admin">Admin</option>
+                    <option value="trainer">Huấn luyện viên</option>
                   </select>
                 </div>
+
+                {/* Lock Status Display */}
+                {modalType === "view" && formData.isAccountLocked && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-center text-red-800">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-medium">Tài khoản đã bị khóa</span>
+                    </div>
+                    {formData.lockReason && (
+                      <p className="text-sm text-red-600 mt-1">
+                        Lý do: {formData.lockReason}
+                      </p>
+                    )}
+                    {formData.lockUntil && (
+                      <p className="text-sm text-red-600 mt-1">
+                        Khóa đến: {new Date(formData.lockUntil).toLocaleDateString("vi-VN")}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

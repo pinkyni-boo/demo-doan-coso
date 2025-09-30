@@ -23,6 +23,7 @@ import {
 export default function ClassManagement() {
   const [classes, setClasses] = useState([]);
   const [services, setServices] = useState([]);
+  const [trainers, setTrainers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -37,6 +38,7 @@ export default function ClassManagement() {
     className: "",
     serviceId: "",
     serviceName: "",
+    instructorId: "",
     instructorName: "",
     description: "",
     maxMembers: 20,
@@ -66,18 +68,24 @@ export default function ClassManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [classesRes, servicesRes] = await Promise.all([
+      const token = localStorage.getItem("token");
+      const [classesRes, servicesRes, trainersRes] = await Promise.all([
         axios.get("http://localhost:5000/api/classes"),
         axios.get("http://localhost:5000/api/services"),
+        axios.get("http://localhost:5000/api/trainers", {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
       ]);
 
       setClasses(classesRes.data || []);
       setServices(servicesRes.data || []);
+      setTrainers(trainersRes.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       showNotification("❌ Không thể tải dữ liệu", "error");
       setClasses([]);
       setServices([]);
+      setTrainers([]);
     } finally {
       setLoading(false);
     }
@@ -148,6 +156,7 @@ export default function ClassManagement() {
       className: "",
       serviceId: "",
       serviceName: "",
+      instructorId: "",
       instructorName: "",
       description: "",
       maxMembers: 20,
@@ -164,9 +173,13 @@ export default function ClassManagement() {
   };
 
   const handleEdit = (classItem) => {
+    // Tìm trainer ID từ instructorName nếu có
+    const trainer = trainers.find(t => t.fullName === classItem.instructorName);
+    
     setFormData({
       ...classItem,
       serviceId: classItem.service?._id || classItem.service || "", // Xử lý cả trường hợp populated và không populated
+      instructorId: trainer?._id || "", // Lấy ID của trainer từ name
       startDate: classItem.startDate
         ? new Date(classItem.startDate).toISOString().split("T")[0]
         : "",
@@ -198,6 +211,27 @@ export default function ClassManagement() {
   const removeScheduleSlot = (index) => {
     const newSchedule = formData.schedule.filter((_, i) => i !== index);
     setFormData({ ...formData, schedule: newSchedule });
+  };
+
+  // Lọc huấn luyện viên theo dịch vụ đã chọn
+  const getFilteredTrainers = () => {
+    if (!formData.serviceId) {
+      return trainers.filter((trainer) => trainer.status === "active");
+    }
+    
+    return trainers.filter((trainer) => {
+      return (
+        trainer.status === "active" &&
+        trainer.specialty &&
+        (trainer.specialty._id === formData.serviceId || 
+         trainer.specialty === formData.serviceId) // Handle both populated and non-populated cases
+      );
+    });
+  };
+
+  // Lấy tất cả huấn luyện viên active (cho trường hợp không có ai phù hợp)
+  const getAllActiveTrainers = () => {
+    return trainers.filter((trainer) => trainer.status === "active");
   };
 
   const showMembers = async (classId) => {
@@ -429,6 +463,9 @@ export default function ClassManagement() {
                           serviceName: selectedService
                             ? selectedService.name
                             : "",
+                          // Reset instructor khi thay đổi dịch vụ
+                          instructorId: "",
+                          instructorName: "",
                         });
                       }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -445,19 +482,77 @@ export default function ClassManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Huấn luyện viên
+                      Huấn luyện viên <span className="text-gray-500">(Tùy chọn)</span>
                     </label>
-                    <input
-                      type="text"
-                      value={formData.instructorName}
-                      onChange={(e) =>
+                    <select
+                      value={formData.instructorId}
+                      onChange={(e) => {
+                        const selectedTrainer = trainers.find(
+                          (trainer) => trainer._id === e.target.value
+                        );
                         setFormData({
                           ...formData,
-                          instructorName: e.target.value,
-                        })
-                      }
+                          instructorId: e.target.value,
+                          instructorName: selectedTrainer
+                            ? selectedTrainer.fullName
+                            : "",
+                        });
+                      }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                      disabled={!formData.serviceId}
+                    >
+                      <option value="">
+                        {!formData.serviceId 
+                          ? "-- Vui lòng chọn dịch vụ trước --" 
+                          : "-- Chọn huấn luyện viên (Tùy chọn) --"}
+                      </option>
+                      
+                      {/* Hiển thị huấn luyện viên phù hợp */}
+                      {formData.serviceId && getFilteredTrainers().length > 0 && (
+                        <>
+                          <optgroup label="🎯 Phù hợp với dịch vụ">
+                            {getFilteredTrainers().map((trainer) => (
+                              <option key={trainer._id} value={trainer._id}>
+                                ✓ {trainer.fullName} - {trainer.experience} năm kinh nghiệm
+                              </option>
+                            ))}
+                          </optgroup>
+                        </>
+                      )}
+                      
+                      {/* Hiển thị tất cả huấn luyện viên khác nếu không có ai phù hợp */}
+                      {formData.serviceId && getFilteredTrainers().length === 0 && (
+                        <>
+                          <option value="" disabled style={{color: '#f59e0b', fontStyle: 'italic'}}>
+                            ⚠️ Không có HLV phù hợp - Hiển thị tất cả HLV khác:
+                          </option>
+                          {getAllActiveTrainers().map((trainer) => (
+                            <option key={trainer._id} value={trainer._id}>
+                              ⚡ {trainer.fullName} - {trainer.experience} năm kinh nghiệm (Khác chuyên môn)
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {formData.serviceId ? (
+                        getFilteredTrainers().length > 0 ? (
+                          <>
+                            <span className="text-green-600 font-medium">
+                              ✓ {getFilteredTrainers().length} huấn luyện viên có chuyên môn phù hợp
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-orange-600 font-medium">
+                              ⚠️ Không có HLV phù hợp - Hiển thị {getAllActiveTrainers().length} HLV khác
+                            </span>
+                          </>
+                        )
+                      ) : (
+                        "Chọn dịch vụ trước để xem huấn luyện viên phù hợp."
+                      )}
+                    </p>
                   </div>
 
                   <div>
@@ -694,7 +789,15 @@ export default function ClassManagement() {
                 </div>
                 <div className="flex items-center">
                   <User size={16} className="mr-2 text-gray-400" />
-                  <span>{classItem.instructorName || "Chưa có HLV"}</span>
+                  {classItem.instructorName ? (
+                    <span className="text-green-600 font-medium">
+                      {classItem.instructorName}
+                    </span>
+                  ) : (
+                    <span className="text-orange-600 font-medium italic">
+                      Chưa gán HLV
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <Users size={16} className="mr-2 text-gray-400" />

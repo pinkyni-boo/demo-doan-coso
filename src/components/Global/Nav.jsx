@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, Settings, Crown, Shield } from "lucide-react";
+import { Menu, X, User, LogOut, Settings, Crown, Shield, Calendar } from "lucide-react";
 
 export default function NavBar({ user, setUser }) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -117,7 +117,7 @@ export default function NavBar({ user, setUser }) {
     { name: "Dịch vụ", path: "/services" },
   ];
 
-  // Menu đầy đủ cho người đã đăng nhập
+  // Menu cho người dùng thường
   const authenticatedNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
@@ -127,8 +127,18 @@ export default function NavBar({ user, setUser }) {
     { name: "Thanh toán", path: "/payment" },
   ];
 
-  // Chọn menu dựa trên trạng thái đăng nhập
-  const navLinks = user ? authenticatedNavLinks : publicNavLinks;
+  // Menu cho trainer (bỏ membership và payment)
+  const trainerNavLinks = [
+    { name: "CLB", path: "/club" },
+    { name: "Dịch vụ", path: "/services" },
+    { name: "Lịch dạy", path: "/trainer/schedule" },
+    { name: "Lớp học", path: "/trainer/classes" },
+  ];
+
+  // Chọn menu dựa trên role và trạng thái đăng nhập
+  const navLinks = user 
+    ? (user.role === "trainer" ? trainerNavLinks : authenticatedNavLinks)
+    : publicNavLinks;
 
   return (
     <header
@@ -304,6 +314,17 @@ export default function NavBar({ user, setUser }) {
                           </Link>
                         )}
 
+                        {user.role === "trainer" && (
+                          <Link
+                            to="/trainer/dashboard"
+                            className="flex items-center px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Calendar className="h-4 w-4 mr-3 text-amber-600" />
+                            Dashboard HLV
+                          </Link>
+                        )}
+
                         <div className="border-t border-amber-200/50 my-2"></div>
 
                         <button
@@ -411,6 +432,16 @@ export default function NavBar({ user, setUser }) {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
+                  </Link>
+                )}
+
+                {user.role === "trainer" && (
+                  <Link
+                    to="/trainer/dashboard"
+                    className="block px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200 rounded-lg"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard HLV
                   </Link>
                 )}
 

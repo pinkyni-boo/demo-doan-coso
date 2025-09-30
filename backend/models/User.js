@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["user", "admin", "instructor"],
+      enum: ["user", "admin", "trainer"],
       default: "user",
     },
     membership: {
@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema(
       public_id: String,
       url: String,
     },
+    // Thêm trường theo dõi tài khoản bị khóa
+    isAccountLocked: {
+      type: Boolean,
+      default: false,
+    },
+    lockReason: String,
+    lockUntil: Date,
   },
   { timestamps: true }
 );
@@ -67,16 +74,22 @@ const userSchema = new mongoose.Schema(
 // Add pre-save hook to hash password
 userSchema.pre("save", async function (next) {
   // Only hash the password if it has been modified (or is new)
-  if (!this.isModified("password")) return next();
+  if (!this.isModified("password")) {
+    console.log('Password không thay đổi, bỏ qua hash');
+    return next();
+  }
 
   try {
+    console.log('Đang hash password...');
     // Generate a salt
     const salt = await bcrypt.genSalt(10);
 
     // Hash the password using our new salt
     this.password = await bcrypt.hash(this.password, salt);
+    console.log('Hash password thành công');
     next();
   } catch (error) {
+    console.error('Lỗi hash password:', error);
     next(error);
   }
 });

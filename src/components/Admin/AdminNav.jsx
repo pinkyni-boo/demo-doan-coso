@@ -2,7 +2,6 @@ import React from "react";
 import {
   LayoutDashboard,
   Users,
-  ImageIcon,
   Calendar,
   BarChart,
   CreditCard,
@@ -74,10 +73,10 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
       description: "Quản lý câu lạc bộ",
     },
     {
-      id: "images",
-      label: "Hình ảnh",
-      icon: <ImageIcon size={20} />,
-      description: "Quản lý media",
+      id: "trainers",
+      label: "HLV",
+      icon: <Users size={20} />,
+      description: "Quản lý huấn luyện viên",
     },
     {
       id: "stats",

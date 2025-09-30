@@ -7,11 +7,9 @@ import {
   Dumbbell,
   Building,
   TrendingUp,
-  ImageIcon,
-  ClipboardList,
+  ClipboardList
 } from "lucide-react";
 import AdminNav from "../AdminNav";
-import ImageManager from "../ImageManager";
 import PaymentManagement from "../PaymentManagement";
 import MembershipManagement from "../MembershipManagement";
 import AdminServiceManager from "../qldv";
@@ -20,6 +18,8 @@ import ClassManagement from "../ClassManagement";
 import AttendanceManagement from "../AttendanceManagement";
 import Statistics from "../Statistics";
 import UserManagement from "../UserManagement";
+import TrainerManagement from "../qlhlv";
+
 
 const AdminDashboard = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -45,6 +45,8 @@ const AdminDashboard = () => {
         return <AttendanceManagement />;
       case "stats":
         return <Statistics />;
+      case "trainers":
+        return <TrainerManagement />;
       case "dashboard":
       default:
         return <DashboardHome setActiveModule={setActiveModule} />;
@@ -293,16 +295,16 @@ const DashboardHome = ({ setActiveModule }) => {
             color="amber"
           />
           <QuickAction
-            title="Hình ảnh"
-            icon={<ImageIcon className="h-6 w-6" />}
-            onClick={() => setActiveModule("images")}
-            color="blue"
-          />
-          <QuickAction
             title="Thống kê"
             icon={<TrendingUp className="h-6 w-6" />}
             onClick={() => setActiveModule("stats")}
             color="indigo"
+          />
+          <QuickAction
+            title="Quản lý HLV"
+            icon={<Users className="h-6 w-6" />}
+            onClick={() => setActiveModule("trainers")}
+            color="amber"
           />
         </div>
       </div>

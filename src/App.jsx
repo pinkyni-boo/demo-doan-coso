@@ -26,13 +26,28 @@ import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import TrainerManagement from "./components/Admin/qlhlv"; // Import component quản lý huấn luyện viên
+import TrainerDashboard from "./components/Trainer/NewDashboard";
+import TrainerClasses from "./components/Trainer/Classes";
+import TrainerSchedule from "./components/Trainer/Schedule";
+import TrainerClassDetail from "./components/Trainer/ClassDetail";
+import AttendanceCheck from "./components/Trainer/AttendanceCheck";
 
 import "./styles/vintage-global.css";
+import axios from "axios";
+import { setupAxiosInterceptors } from "./utils/authUtils";
+import { useAccountStatusCheck } from "./hooks/useAccountStatusCheck";
+
+// Setup axios interceptors
+setupAxiosInterceptors(axios);
 
 // Wrap toàn bộ app content
 function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Hook để kiểm tra trạng thái tài khoản định kỳ
+  useAccountStatusCheck(user);
 
   useEffect(() => {
     // Safely access localStorage
@@ -87,6 +102,11 @@ function App({ appName }) {
               <Route path="/user" element={<UserProfile />} />
               <Route path="/classes" element={<ViewClasses />} />
               <Route path="/my-classes" element={<UserClasses />} />
+              <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
+              <Route path="/trainer/classes" element={<TrainerClasses />} />
+              <Route path="/trainer/schedule" element={<TrainerSchedule />} />
+              <Route path="/trainer/class/:classId" element={<TrainerClassDetail />} />
+              <Route path="/trainer/attendance/:classId" element={<AttendanceCheck />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
 
               {/* Admin routes - tất cả qua dashboard */}
