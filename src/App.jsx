@@ -27,11 +27,11 @@ import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import TrainerManagement from "./components/Admin/qlhlv"; // Import component quản lý huấn luyện viên
-import TrainerDashboard from "./components/Trainer/NewDashboard";
+import TrainerDashboard from "./components/Trainer/Dashboard";
 import TrainerClasses from "./components/Trainer/Classes";
-import TrainerSchedule from "./components/Trainer/Schedule";
+import TrainerSchedule from "./components/Trainer/TrainerSchedule";
 import TrainerClassDetail from "./components/Trainer/ClassDetail";
-import AttendanceCheck from "./components/Trainer/AttendanceCheck";
+import AttendanceFlow from "./components/Trainer/AttendanceFlow";
 
 import "./styles/vintage-global.css";
 import axios from "axios";
@@ -106,7 +106,7 @@ function App({ appName }) {
               <Route path="/trainer/classes" element={<TrainerClasses />} />
               <Route path="/trainer/schedule" element={<TrainerSchedule />} />
               <Route path="/trainer/class/:classId" element={<TrainerClassDetail />} />
-              <Route path="/trainer/attendance/:classId" element={<AttendanceCheck />} />
+              <Route path="/trainer/attendance/:classId" element={<AttendanceFlow />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
 
               {/* Admin routes - tất cả qua dashboard */}

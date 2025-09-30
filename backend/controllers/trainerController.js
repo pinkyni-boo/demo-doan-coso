@@ -97,8 +97,8 @@ export const getClassDetail = async (req, res) => {
 
     // Lấy danh sách học viên đã đăng ký (nếu có)
     const enrollments = await ClassEnrollment.find({ 
-      classId: classItem._id 
-    }).populate('userId', 'fullName email phone');
+      class: classItem._id 
+    }).populate('user', 'fullName email phone');
     
     res.json({
       success: true,
@@ -118,10 +118,11 @@ export const getClassDetail = async (req, res) => {
         price: classItem.price,
         status: classItem.status,
         students: enrollments?.map(enrollment => ({
-          id: enrollment.userId._id,
-          name: enrollment.userId.fullName,
-          email: enrollment.userId.email,
-          phone: enrollment.userId.phone,
+          id: enrollment.user._id,
+          name: enrollment.user.fullName,
+          email: enrollment.user.email,
+          phone: enrollment.user.phone,
+          paymentStatus: enrollment.paymentStatus,
           joinDate: enrollment.createdAt,
           attendanceRate: 85, // Tạm thời hardcode
           totalAttended: Math.floor(Math.random() * (classItem.currentSession || 1)),

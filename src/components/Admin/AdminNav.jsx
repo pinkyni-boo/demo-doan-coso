@@ -43,12 +43,6 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
       description: "Quản lý lớp tập",
     },
     {
-      id: "attendance",
-      label: "Điểm danh",
-      icon: <ClipboardList size={20} />,
-      description: "Theo dõi tham gia",
-    },
-    {
       id: "payments",
       label: "Thanh toán",
       icon: <CreditCard size={20} />,

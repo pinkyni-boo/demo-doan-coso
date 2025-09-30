@@ -52,19 +52,51 @@ export default function TrainerClassDetail() {
 
       const classData = response.data.class;
       setClassData(classData);
-      setStudents(classData.students || []);
       
-      // Mock attendance history - sẽ thay bằng API call thực
-      const mockAttendance = [
-        {
-          session: classData.currentSession || 1,
-          date: new Date().toISOString().split('T')[0],
-          present: Math.floor(classData.currentStudents * 0.85),
-          absent: Math.floor(classData.currentStudents * 0.15),
-          rate: 85
-        }
-      ];
-      setAttendanceHistory(mockAttendance);
+      // Students data is already included in the class response from trainer API
+      if (classData.students && classData.students.length > 0) {
+        const studentsWithPaymentStatus = classData.students.map(student => ({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          phone: student.phone || "Chưa cập nhật",
+          paymentStatus: student.paymentStatus || false,
+          attendanceRate: student.attendanceRate || Math.round(Math.random() * 40 + 60),
+          totalAttended: student.totalAttended || 0,
+          totalSessions: student.totalSessions || 0,
+          joinDate: student.joinDate
+        }));
+        
+        console.log("Students from class data:", studentsWithPaymentStatus);
+        setStudents(studentsWithPaymentStatus);
+      } else {
+        console.log("No students found in class data");
+        setStudents([]);
+      }
+      
+      // Lấy lịch sử điểm danh thực từ API
+      try {
+        const attendanceResponse = await axios.get(`http://localhost:5000/api/attendance/class/${classId}/sessions`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        const sessions = attendanceResponse.data.sessions || [];
+        const attendanceHistory = sessions.map(session => ({
+          session: session.sessionNumber,
+          date: session.sessionDate,
+          present: session.presentCount,
+          absent: session.totalStudents - session.presentCount,
+          rate: session.totalStudents > 0 ? Math.round((session.presentCount / session.totalStudents) * 100) : 0
+        }));
+        
+        setAttendanceHistory(attendanceHistory);
+      } catch (attendanceError) {
+        console.error("Error fetching attendance history:", attendanceError);
+        // Fallback to empty array
+        setAttendanceHistory([]);
+      }
 
     } catch (error) {
       console.error("Error fetching class data:", error);
@@ -78,13 +110,22 @@ export default function TrainerClassDetail() {
   };
 
   const handleUpdateProgress = () => {
+    if (!classData) {
+      console.error("Class data not available");
+      return;
+    }
     // Logic cập nhật tiến độ
-    console.log("Update progress");
+    console.log("Update progress for class:", classData._id);
+    // TODO: Implement progress update functionality
   };
 
   const handleTakeAttendance = () => {
-    // Logic điểm danh
-    console.log("Take attendance");
+    if (!classData || !classData._id) {
+      console.error("Class data or ID not available");
+      return;
+    }
+    console.log("Navigating to attendance for class:", classData._id);
+    navigate(`/trainer/attendance/${classData._id}`);
   };
 
   const StatCard = ({ title, value, subtitle, icon, color = "blue" }) => (
@@ -158,10 +199,10 @@ export default function TrainerClassDetail() {
     );
   }
 
-  const progressPercent = (classData.currentSession / classData.totalSessions) * 100;
+  const progressPercent = ((classData?.currentSession || 0) / (classData?.totalSessions || 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-20">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -181,17 +222,15 @@ export default function TrainerClassDetail() {
             <div className="flex space-x-3">
               <button
                 onClick={handleTakeAttendance}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                disabled={!classData || !classData._id}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
+                  !classData || !classData._id
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Điểm danh
-              </button>
-              <button
-                onClick={handleUpdateProgress}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                Cập nhật tiến độ
               </button>
             </div>
           </div>
@@ -206,7 +245,6 @@ export default function TrainerClassDetail() {
               { id: "overview", label: "Tổng quan" },
               { id: "students", label: "Học viên" },
               { id: "attendance", label: "Lịch sử điểm danh" },
-              { id: "progress", label: "Tiến độ" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -232,29 +270,33 @@ export default function TrainerClassDetail() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <StatCard
                 title="Tiến độ lớp học"
-                value={`${classData.currentSession}/${classData.totalSessions}`}
-                subtitle={`${Math.round(progressPercent)}% hoàn thành`}
+                value={`${classData.currentSession || 0}/${classData.totalSessions || 0}`}
+                subtitle={`${Math.round(((classData.currentSession || 0) / (classData.totalSessions || 1)) * 100)}% hoàn thành`}
                 icon={<Target />}
                 color="blue"
               />
               <StatCard
-                title="Học viên hiện tại"
-                value={`${classData.currentStudents}/${classData.maxStudents}`}
-                subtitle="Còn chỗ trống"
+                title="Học viên đã đăng ký"
+                value={`${students.length}/${classData.maxStudents || 0}`}
+                subtitle={`${students.filter(s => s.paymentStatus).length} đã thanh toán`}
                 icon={<Users />}
                 color="green"
               />
               <StatCard
                 title="Tỷ lệ tham gia"
-                value="85%"
-                subtitle="Trung bình"
+                value={attendanceHistory.length > 0 
+                  ? `${Math.round(attendanceHistory.reduce((acc, curr) => acc + curr.rate, 0) / attendanceHistory.length)}%`
+                  : "Chưa có dữ liệu"
+                }
+                subtitle="Trung bình các buổi học"
                 icon={<TrendingUp />}
                 color="orange"
               />
               <StatCard
-                title="Buổi học tiếp theo"
-                value="Thứ 2"
-                subtitle="08:00 - 09:30"
+                title="Trạng thái lớp học"
+                value={classData.status === "ongoing" ? "Đang diễn ra" : 
+                       classData.status === "completed" ? "Hoàn thành" : "Sắp bắt đầu"}
+                subtitle={`Buổi tiếp theo: ${(classData.currentSession || 0) + 1}`}
                 icon={<Calendar />}
                 color="purple"
               />
@@ -310,16 +352,19 @@ export default function TrainerClassDetail() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Buổi học đã hoàn thành</span>
-                  <span>{classData.currentSession}/{classData.totalSessions}</span>
+                  <span>{classData?.currentSession || 0}/{classData?.totalSessions || 0}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div 
                     className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${progressPercent}%` }}
+                    style={{ width: `${Math.min(progressPercent, 100)}%` }}
                   ></div>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Còn {classData.totalSessions - classData.currentSession} buổi học nữa
+                  {(classData?.totalSessions || 0) - (classData?.currentSession || 0) > 0 
+                    ? `Còn ${(classData?.totalSessions || 0) - (classData?.currentSession || 0)} buổi học nữa`
+                    : "Đã hoàn thành tất cả buổi học"
+                  }
                 </p>
               </div>
             </div>
@@ -330,19 +375,30 @@ export default function TrainerClassDetail() {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">
-                Danh sách học viên ({students.length})
+                Danh sách học viên đã đăng ký ({students.length})
               </h2>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
-                <Plus className="h-4 w-4 mr-2" />
-                Thêm học viên
-              </button>
+              <div className="text-sm text-gray-600">
+                <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
+                  {students.filter(s => s.paymentStatus).length} đã thanh toán
+                </span>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {students.map((student) => (
-                <StudentCard key={student.id} student={student} />
-              ))}
-            </div>
+            {students.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có học viên đăng ký</h3>
+                <p className="text-gray-500">
+                  Học viên sẽ tự động hiển thị ở đây khi họ đăng ký và thanh toán lớp học này.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {students.map((student) => (
+                  <StudentCard key={student.id} student={student} />
+                ))}
+              </div>
+            )}
           </div>
         )}
 

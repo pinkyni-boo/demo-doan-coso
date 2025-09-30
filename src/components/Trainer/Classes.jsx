@@ -138,13 +138,7 @@ export default function TrainerClasses() {
               <Eye className="h-4 w-4" />
               Xem chi tiết
             </button>
-            <button 
-              onClick={() => navigate(`/trainer/attendance/${classItem._id}`)}
-              className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Điểm danh
-            </button>
+            
           </div>
         </div>
       </div>

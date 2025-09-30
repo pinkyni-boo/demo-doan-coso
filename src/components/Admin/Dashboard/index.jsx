@@ -265,12 +265,6 @@ const DashboardHome = ({ setActiveModule }) => {
             color="purple"
           />
           <QuickAction
-            title="Điểm danh"
-            icon={<ClipboardList className="h-6 w-6" />}
-            onClick={() => setActiveModule("attendance")}
-            color="blue"
-          />
-          <QuickAction
             title="Thanh toán"
             icon={<CreditCard className="h-6 w-6" />}
             onClick={() => setActiveModule("payments")}
