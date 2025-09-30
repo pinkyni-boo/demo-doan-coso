@@ -21,6 +21,7 @@ import UserProfile from "./components/Users";
 import MembershipPage from "./components/Membership";
 import AdminLayout from "./components/Admin/AdminLayout";
 import AdminDashboard from "./components/Admin/Dashboard";
+import AdminScheduleRequests from "./components/Admin/AdminScheduleRequests";
 import ViewClasses from "./components/Classes/index";
 import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
@@ -30,6 +31,7 @@ import TrainerManagement from "./components/Admin/qlhlv"; // Import component qu
 import TrainerDashboard from "./components/Trainer/Dashboard";
 import TrainerClasses from "./components/Trainer/Classes";
 import TrainerSchedule from "./components/Trainer/TrainerSchedule";
+import ScheduleChangeRequests from "./components/Trainer/ScheduleChangeRequests";
 import TrainerClassDetail from "./components/Trainer/ClassDetail";
 import AttendanceFlow from "./components/Trainer/AttendanceFlow";
 
@@ -105,6 +107,7 @@ function App({ appName }) {
               <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
               <Route path="/trainer/classes" element={<TrainerClasses />} />
               <Route path="/trainer/schedule" element={<TrainerSchedule />} />
+              <Route path="/trainer/schedule-requests" element={<ScheduleChangeRequests />} />
               <Route path="/trainer/class/:classId" element={<TrainerClassDetail />} />
               <Route path="/trainer/attendance/:classId" element={<AttendanceFlow />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
@@ -125,6 +128,7 @@ function App({ appName }) {
                       <Route path="clubs" element={<AdminDashboard />} />
                       <Route path="images" element={<AdminDashboard />} />
                       <Route path="stats" element={<AdminDashboard />} />
+                      <Route path="schedule-requests" element={<AdminScheduleRequests />} />
                       <Route
                         path=""
                         element={<Navigate to="dashboard" replace />}

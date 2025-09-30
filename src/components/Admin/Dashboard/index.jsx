@@ -19,6 +19,36 @@ import AttendanceManagement from "../AttendanceManagement";
 import Statistics from "../Statistics";
 import UserManagement from "../UserManagement";
 import TrainerManagement from "../qlhlv";
+import AdminScheduleRequests from "../AdminScheduleRequests";
+
+// Simple ImageManager placeholder component
+const ImageManager = () => {
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Quản lý hình ảnh
+        </h1>
+        <p className="text-gray-600">
+          Tính năng quản lý hình ảnh đang được phát triển.
+        </p>
+      </div>
+      <div className="bg-white rounded-lg shadow-md p-12 text-center">
+        <div className="text-gray-400 mb-4">
+          <svg className="h-24 w-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          Quản lý hình ảnh
+        </h3>
+        <p className="text-gray-500">
+          Chức năng này sẽ cho phép quản lý hình ảnh trong hệ thống.
+        </p>
+      </div>
+    </div>
+  );
+};
 
 
 const AdminDashboard = () => {
@@ -47,6 +77,8 @@ const AdminDashboard = () => {
         return <Statistics />;
       case "trainers":
         return <TrainerManagement />;
+      case "schedule-requests":
+        return <AdminScheduleRequests />;
       case "dashboard":
       default:
         return <DashboardHome setActiveModule={setActiveModule} />;
@@ -114,32 +146,11 @@ const DashboardHome = ({ setActiveModule }) => {
   return (
     <div className="space-y-8">
       {/* Enhanced Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-2 border-amber-200/50 shadow-2xl rounded-3xl p-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-stone-800 vintage-heading mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-stone-600 vintage-serif text-lg">
-              Chào mừng bạn đến với bảng điều khiển quản trị Royal Fitness
-            </p>
-          </div>
-          <div className="w-20 h-20 bg-gradient-to-r from-amber-600 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <TrendingUp className="h-10 w-10 text-white" />
-          </div>
-        </div>
-      </div>
+      
 
       {/* Enhanced Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Tổng người dùng"
-          value={stats?.stats?.totalUsers || 0}
-          change={`+${stats?.stats?.newUsersThisMonth || 0} tháng này`}
-          icon={<Users className="h-7 w-7" />}
-          color="blue"
-          trend="up"
-        />
+        
         <StatCard
           title="Doanh thu tháng"
           value={formatCurrency(stats?.stats?.monthlyRevenue || 0)}
@@ -156,14 +167,7 @@ const DashboardHome = ({ setActiveModule }) => {
           color="purple"
           trend="stable"
         />
-        <StatCard
-          title="Thành viên mới"
-          value={stats?.stats?.newMembersThisMonth || 0}
-          change="Tháng này"
-          icon={<Users className="h-7 w-7" />}
-          color="amber"
-          trend="up"
-        />
+        
       </div>
 
       {/* Enhanced Charts Section */}
@@ -299,6 +303,12 @@ const DashboardHome = ({ setActiveModule }) => {
             icon={<Users className="h-6 w-6" />}
             onClick={() => setActiveModule("trainers")}
             color="amber"
+          />
+          <QuickAction
+            title="Bù lịch"
+            icon={<Calendar className="h-6 w-6" />}
+            onClick={() => setActiveModule("schedule-requests")}
+            color="orange"
           />
         </div>
       </div>

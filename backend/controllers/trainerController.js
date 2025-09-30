@@ -2,6 +2,7 @@ import Trainer from "../models/Trainer.js";
 import Class from "../models/Class.js";
 import User from "../models/User.js";
 import ClassEnrollment from "../models/ClassEnrollment.js";
+import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
 import mongoose from "mongoose";
 
 // Lấy danh sách lớp học được gán cho trainer
@@ -380,5 +381,196 @@ export const deleteTrainer = async (req, res) => {
     res.json({ message: "Đã xóa HLV thành công." });
   } catch (err) {
     res.status(400).json({ error: "Lỗi khi xóa HLV." });
+  }
+};
+
+// Schedule Change Request Controllers
+
+// Tạo yêu cầu thay đổi lịch
+export const createScheduleChangeRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { classId, originalDate, requestedDate, reason, urgency } = req.body;
+
+    console.log("Received request data:", { classId, originalDate, requestedDate, reason, urgency, userId });
+
+    // Kiểm tra dữ liệu đầu vào
+    if (!classId || !originalDate || !requestedDate || !reason) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp đầy đủ thông tin: classId, originalDate, requestedDate, reason"
+      });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(classId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID lớp học không hợp lệ"
+      });
+    }
+
+    // Tìm thông tin user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thông tin người dùng"
+      });
+    }
+
+    // Kiểm tra lớp học có thuộc về trainer này không
+    const classItem = await Class.findOne({
+      _id: classId,
+      instructorName: user.fullName
+    });
+
+    if (!classItem) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy lớp học hoặc bạn không có quyền thay đổi lịch của lớp này"
+      });
+    }
+
+    // Kiểm tra không được yêu cầu thay đổi sang ngày trong quá khứ
+    const requestedDateObj = new Date(requestedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (requestedDateObj < today) {
+      return res.status(400).json({
+        success: false,
+        message: "Không thể yêu cầu thay đổi lịch sang ngày trong quá khứ"
+      });
+    }
+
+    // Kiểm tra ngày bù có nằm trong khoảng thời gian lớp học không
+    const classStartDate = new Date(classItem.startDate);
+    const classEndDate = new Date(classItem.endDate);
+    
+    if (requestedDateObj < classStartDate || requestedDateObj > classEndDate) {
+      return res.status(400).json({
+        success: false,
+        message: `Ngày dạy bù phải trong khoảng thời gian lớp học (${classStartDate.toLocaleDateString('vi-VN')} - ${classEndDate.toLocaleDateString('vi-VN')})`
+      });
+    }
+
+    // Kiểm tra không có yêu cầu pending cho cùng lớp và ngày
+    const existingRequest = await ScheduleChangeRequest.findOne({
+      trainer: userId,
+      class: classId,
+      originalDate: new Date(originalDate),
+      status: "pending"
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "Đã có yêu cầu thay đổi lịch đang chờ xử lý cho ngày này"
+      });
+    }
+
+    // Tạo yêu cầu thay đổi lịch
+    const scheduleChangeRequest = new ScheduleChangeRequest({
+      trainer: userId,
+      class: classId,
+      originalDate: new Date(originalDate),
+      requestedDate: new Date(requestedDate),
+      reason: reason.trim(),
+      urgency: urgency || "medium"
+    });
+
+    console.log("Creating schedule change request:", scheduleChangeRequest);
+    await scheduleChangeRequest.save();
+    console.log("Schedule change request saved successfully");
+
+    // Populate thông tin để trả về
+    await scheduleChangeRequest.populate([
+      { path: "class", select: "className serviceName" },
+      { path: "trainer", select: "fullName email" }
+    ]);
+
+    res.status(201).json({
+      success: true,
+      message: "Yêu cầu thay đổi lịch đã được gửi thành công",
+      request: scheduleChangeRequest
+    });
+
+  } catch (error) {
+    console.error("Error creating schedule change request:", error);
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi tạo yêu cầu thay đổi lịch",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Lấy danh sách yêu cầu thay đổi lịch của trainer
+export const getScheduleChangeRequests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { status, page = 1, limit = 10 } = req.query;
+
+    // Tạo filter
+    const filter = { trainer: userId };
+    if (status && status !== "all") {
+      filter.status = status;
+    }
+
+    // Tính toán pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Lấy danh sách yêu cầu
+    const requests = await ScheduleChangeRequest.find(filter)
+      .populate("class", "className serviceName location")
+      .populate("approvedBy", "fullName")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Đếm tổng số yêu cầu
+    const total = await ScheduleChangeRequest.countDocuments(filter);
+
+    // Thống kê theo status
+    const stats = await ScheduleChangeRequest.aggregate([
+      { $match: { trainer: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const statusStats = {
+      pending: 0,
+      approved: 0,
+      rejected: 0
+    };
+
+    stats.forEach(stat => {
+      statusStats[stat._id] = stat.count;
+    });
+
+    res.json({
+      success: true,
+      requests,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      },
+      stats: statusStats
+    });
+
+  } catch (error) {
+    console.error("Error fetching schedule change requests:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách yêu cầu thay đổi lịch"
+    });
   }
 };

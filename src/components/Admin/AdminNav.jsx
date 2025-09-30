@@ -73,6 +73,12 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
       description: "Quản lý huấn luyện viên",
     },
     {
+      id: "schedule-requests",
+      label: "Yêu cầu lịch",
+      icon: <Calendar size={20} />,
+      description: "Xử lý yêu cầu thay đổi lịch",
+    },
+    {
       id: "stats",
       label: "Thống kê",
       icon: <BarChart size={20} />,

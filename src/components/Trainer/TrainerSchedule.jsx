@@ -13,7 +13,13 @@ import {
   Download,
   Eye,
   Search,
-  X
+  X,
+  AlertCircle,
+  MessageSquare,
+  Send,
+  CheckCircle,
+  XCircle,
+  Bell
 } from "lucide-react";
 
 export default function TrainerSchedule() {
@@ -24,9 +30,18 @@ export default function TrainerSchedule() {
   const [viewMode, setViewMode] = useState("week"); // week, month
   const [filterStatus, setFilterStatus] = useState("all"); // all, ongoing, upcoming
   const [searchTerm, setSearchTerm] = useState(""); // search by class name
+  
+  // Schedule change request states
+  const [showChangeRequestModal, setShowChangeRequestModal] = useState(false);
+  const [selectedClassForChange, setSelectedClassForChange] = useState(null);
+  const [changeRequests, setChangeRequests] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [makeupSchedules, setMakeupSchedules] = useState([]);
+  const [cancelledOriginalDates, setCancelledOriginalDates] = useState([]);
 
   useEffect(() => {
     fetchTrainerClasses();
+    fetchChangeRequests();
   }, []);
 
   const fetchTrainerClasses = async () => {
@@ -46,6 +61,98 @@ export default function TrainerSchedule() {
       setClasses([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch schedule change requests
+  const fetchChangeRequests = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:5000/api/trainers/schedule-change-requests`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        const requests = response.data.requests || [];
+        setChangeRequests(requests);
+        setPendingRequests(requests.filter(r => r.status === 'pending').length);
+        
+        // Extract makeup schedules from approved requests
+        const makeups = requests
+          .filter(r => r.status === 'approved' && r.makeupSchedule)
+          .map(r => ({
+            id: r._id,
+            classId: r.class?._id,
+            className: r.class?.className,
+            location: r.makeupSchedule.location,
+            date: r.makeupSchedule.date,
+            startTime: r.makeupSchedule.startTime,
+            endTime: r.makeupSchedule.endTime,
+            originalDate: r.originalDate
+          }));
+        setMakeupSchedules(makeups);
+        
+        // Extract cancelled original dates (approved requests with makeup schedules)
+        const cancelledDates = requests
+          .filter(r => r.status === 'approved' && r.makeupSchedule)
+          .map(r => ({
+            classId: r.class?._id,
+            className: r.class?.className,
+            originalDate: r.originalDate,
+            location: r.class?.location
+          }));
+        setCancelledOriginalDates(cancelledDates);
+      } else {
+        setChangeRequests([]);
+        setPendingRequests(0);
+        setMakeupSchedules([]);
+        setCancelledOriginalDates([]);
+      }
+    } catch (error) {
+      console.error("Error fetching change requests:", error);
+      setChangeRequests([]);
+      setPendingRequests(0);
+      setMakeupSchedules([]);
+      setCancelledOriginalDates([]);
+    }
+  };
+
+  // Submit schedule change request
+  const submitChangeRequest = async (requestData) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      const requestBody = {
+        classId: selectedClassForChange._id,
+        originalDate: requestData.originalDate,
+        requestedDate: requestData.requestedDate,
+        reason: requestData.reason,
+        urgency: requestData.urgency
+      };
+      
+      console.log("Submitting request data:", requestBody);
+      console.log("Selected class:", selectedClassForChange);
+      
+      const response = await axios.post(
+        `http://localhost:5000/api/trainers/schedule-change-request`,
+        requestBody,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        alert("Yêu cầu thay đổi lịch đã được gửi! Admin sẽ xem xét và phản hồi sớm.");
+        setShowChangeRequestModal(false);
+        setSelectedClassForChange(null);
+        fetchChangeRequests(); // Refresh requests
+      }
+    } catch (error) {
+      console.error("Error submitting change request:", error);
+      console.error("Error response:", error.response?.data);
+      
+      // Hiển thị thông báo lỗi chi tiết từ server
+      const errorMessage = error.response?.data?.message || "Có lỗi khi gửi yêu cầu. Vui lòng thử lại.";
+      alert(errorMessage);
     }
   };
 
@@ -95,22 +202,40 @@ export default function TrainerSchedule() {
 
   // Get classes for specific day
   const getClassesForDay = (dayIndex) => {
-    return classes.filter(classItem => {
+    const currentDayDate = weekDates[dayIndex === 0 ? 6 : dayIndex - 1]; // Adjust for Sunday = 0
+    currentDayDate.setHours(0, 0, 0, 0);
+    
+    // Get cancelled dates for filtering
+    const cancelledOnThisDay = cancelledOriginalDates.filter(cancelled => {
+      const cancelledDate = new Date(cancelled.originalDate);
+      cancelledDate.setHours(0, 0, 0, 0);
+      return cancelledDate.getTime() === currentDayDate.getTime();
+    });
+
+    const regularClasses = classes.filter(classItem => {
       const schedule = parseSchedule(classItem.schedule);
       if (!schedule) return false;
       
       // Check if the current week's day is within the class date range
-      const currentDayDate = weekDates[dayIndex === 0 ? 6 : dayIndex - 1]; // Adjust for Sunday = 0
       const classStartDate = new Date(classItem.startDate);
       const classEndDate = new Date(classItem.endDate);
       
       // Set time to start of day for accurate comparison
-      currentDayDate.setHours(0, 0, 0, 0);
       classStartDate.setHours(0, 0, 0, 0);
       classEndDate.setHours(0, 0, 0, 0);
       
       // Only show class if current day is within the class duration
       if (currentDayDate < classStartDate || currentDayDate > classEndDate) {
+        return false;
+      }
+      
+      // Check if this specific class on this date is cancelled
+      const isCancelledToday = cancelledOnThisDay.some(cancelled => 
+        cancelled.classId === classItem._id
+      );
+      
+      // If cancelled, don't include in regular classes (will be shown as cancelled instead)
+      if (isCancelledToday) {
         return false;
       }
       
@@ -130,6 +255,42 @@ export default function TrainerSchedule() {
       // Check if this day of week matches the class schedule
       return schedule.days.includes(dayIndex);
     });
+
+    // Get makeup schedules for this day
+    const makeupClassesForDay = makeupSchedules.filter(makeup => {
+      const makeupDate = new Date(makeup.date);
+      makeupDate.setHours(0, 0, 0, 0);
+      
+      return makeupDate.getTime() === currentDayDate.getTime();
+    }).map(makeup => ({
+      ...makeup,
+      _id: `makeup-${makeup.id}`,
+      className: makeup.className,
+      schedule: `${makeup.startTime}-${makeup.endTime}`,
+      location: makeup.location,
+      isMakeup: true,
+      description: 'Lịch dạy bù'
+    }));
+
+    // Get cancelled original dates for this day (show as grey/disabled)
+    const cancelledClassesForDay = cancelledOnThisDay.map(cancelled => {
+      // Find the original class to get schedule info
+      const originalClass = classes.find(c => c._id === cancelled.classId);
+      if (!originalClass) return null;
+      
+      const schedule = parseSchedule(originalClass.schedule);
+      if (!schedule) return null;
+      
+      return {
+        ...originalClass,
+        _id: `cancelled-${cancelled.classId}-${cancelled.originalDate}`,
+        isCancelled: true,
+        originalDate: cancelled.originalDate,
+        description: 'Lịch đã hủy - có lịch bù'
+      };
+    }).filter(Boolean);
+
+    return [...regularClasses, ...makeupClassesForDay, ...cancelledClassesForDay];
   };
 
   // Navigate weeks
@@ -149,8 +310,252 @@ export default function TrainerSchedule() {
     setCurrentWeek(new Date());
   };
 
+  // Schedule Change Request Modal Component
+  const ScheduleChangeRequestModal = () => {
+    const [formData, setFormData] = useState({
+      originalDate: '',
+      requestedDate: '',
+      reason: '',
+      urgency: 'medium'
+    });
+
+    if (!showChangeRequestModal || !selectedClassForChange) return null;
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      
+      // Validate required fields
+      if (!formData.originalDate || !formData.requestedDate || !formData.reason.trim()) {
+        alert("Vui lòng điền đầy đủ thông tin!");
+        return;
+      }
+      
+      // Validate reason length
+      if (formData.reason.trim().length < 10) {
+        alert("Lý do thay đổi phải có ít nhất 10 ký tự!");
+        return;
+      }
+      
+      // Validate reason length max
+      if (formData.reason.trim().length > 500) {
+        alert("Lý do thay đổi không được vượt quá 500 ký tự!");
+        return;
+      }
+      
+      // Validate dates
+      const originalDateObj = new Date(formData.originalDate);
+      const requestedDateObj = new Date(formData.requestedDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (requestedDateObj < today) {
+        alert("Không thể chọn ngày thay đổi trong quá khứ!");
+        return;
+      }
+      
+      if (originalDateObj.getTime() === requestedDateObj.getTime()) {
+        alert("Ngày thay đổi phải khác với ngày gốc!");
+        return;
+      }
+
+      // Validate requested date within class duration
+      if (selectedClassForChange.startDate && selectedClassForChange.endDate) {
+        const classStartDate = new Date(selectedClassForChange.startDate);
+        const classEndDate = new Date(selectedClassForChange.endDate);
+        
+        if (requestedDateObj < classStartDate || requestedDateObj > classEndDate) {
+          alert(`Ngày dạy bù phải trong khoảng thời gian lớp học (${classStartDate.toLocaleDateString('vi-VN')} - ${classEndDate.toLocaleDateString('vi-VN')})!`);
+          return;
+        }
+      }
+      
+      submitChangeRequest(formData);
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Yêu cầu thay đổi lịch dạy
+              </h3>
+              <button
+                onClick={() => {
+                  setShowChangeRequestModal(false);
+                  setSelectedClassForChange(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Class Info */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h4 className="font-medium text-gray-900 mb-2">{selectedClassForChange.className}</h4>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>📍 {selectedClassForChange.location}</p>
+                <p>⏰ {selectedClassForChange.schedule}</p>
+                <p>👥 {selectedClassForChange.currentStudents || 0} học viên</p>
+                {selectedClassForChange.startDate && selectedClassForChange.endDate && (
+                  <p>📅 Thời gian lớp: {new Date(selectedClassForChange.startDate).toLocaleDateString('vi-VN')} - {new Date(selectedClassForChange.endDate).toLocaleDateString('vi-VN')}</p>
+                )}
+              </div>
+              {selectedClassForChange.startDate && selectedClassForChange.endDate && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>⚠️ Lưu ý:</strong> Ngày dạy bù chỉ có thể chọn trong khoảng thời gian lớp học đang hoạt động.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ngày cần thay đổi *
+                </label>
+                <input
+                  type="date"
+                  value={formData.originalDate}
+                  onChange={(e) => setFormData({...formData, originalDate: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ngày mong muốn dạy bù *
+                </label>
+                <input
+                  type="date"
+                  value={formData.requestedDate}
+                  onChange={(e) => setFormData({...formData, requestedDate: e.target.value})}
+                  min={selectedClassForChange.startDate ? new Date(selectedClassForChange.startDate).toISOString().split('T')[0] : undefined}
+                  max={selectedClassForChange.endDate ? new Date(selectedClassForChange.endDate).toISOString().split('T')[0] : undefined}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                {selectedClassForChange.startDate && selectedClassForChange.endDate && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Chỉ có thể chọn từ {new Date(selectedClassForChange.startDate).toLocaleDateString('vi-VN')} đến {new Date(selectedClassForChange.endDate).toLocaleDateString('vi-VN')}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mức độ khẩn cấp
+                </label>
+                <select
+                  value={formData.urgency}
+                  onChange={(e) => setFormData({...formData, urgency: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="low">Thấp - Có thể linh hoạt</option>
+                  <option value="medium">Bình thường</option>
+                  <option value="high">Cao - Cần xử lý sớm</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lý do thay đổi *
+                </label>
+                <textarea
+                  value={formData.reason}
+                  onChange={(e) => setFormData({...formData, reason: e.target.value})}
+                  placeholder="Ví dụ: Có việc đột xuất, bệnh, lịch cá nhân..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangeRequestModal(false);
+                    setSelectedClassForChange(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Gửi yêu cầu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Class card component
   const ClassCard = ({ classItem }) => {
+    // Special handling for cancelled classes (grey)
+    if (classItem.isCancelled) {
+      const schedule = parseSchedule(classItem.schedule);
+      if (!schedule) return null;
+      
+      return (
+        <div className="p-3 rounded-lg border-l-4 border-gray-400 bg-gray-50 opacity-75">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-sm text-gray-600 line-through">{classItem.className}</h4>
+            <span className="text-xs text-gray-500">
+              {schedule.startTime} - {schedule.endTime}
+            </span>
+          </div>
+          
+          <div className="mb-2">
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+              Đã hủy - có lịch bù
+            </span>
+          </div>
+          
+          <div className="flex items-center text-xs text-gray-500">
+            <MapPin className="h-3 w-3 mr-1" />
+            <span>{classItem.location}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Special handling for makeup classes
+    if (classItem.isMakeup) {
+      return (
+        <div className="p-3 rounded-lg border-l-4 border-orange-400 bg-orange-50 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-sm text-orange-900">{classItem.className}</h4>
+            <span className="text-xs text-orange-700 font-medium">
+              {classItem.schedule}
+            </span>
+          </div>
+          
+          <div className="mb-2">
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-200 text-orange-800">
+              Lịch dạy bù
+            </span>
+          </div>
+          
+          <div className="flex items-center text-xs text-orange-700">
+            <MapPin className="h-3 w-3 mr-1" />
+            <span>{classItem.location}</span>
+          </div>
+        </div>
+      );
+    }
+
+    // Regular class handling
     const schedule = parseSchedule(classItem.schedule);
     if (!schedule) return null;
 
@@ -213,52 +618,27 @@ export default function TrainerSchedule() {
           </span>
         </div>
         
-        {/* Class status and date range */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className={`px-2 py-1 rounded-full font-medium ${
-              getClassStatus() === "upcoming" ? "bg-blue-200 text-blue-700" :
-              getClassStatus() === "ongoing" ? "bg-green-200 text-green-700" :
-              "bg-gray-200 text-gray-600"
-            }`}>
-              {getStatusText()}
-            </span>
-            <span className="opacity-75">
-              {new Date(classItem.startDate).toLocaleDateString('vi-VN')} - {new Date(classItem.endDate).toLocaleDateString('vi-VN')}
-            </span>
-          </div>
+        <div className="flex items-center text-xs opacity-75">
+          <MapPin className="h-3 w-3 mr-1" />
+          <span className="line-clamp-1">{classItem.location}</span>
         </div>
         
-        <div className="space-y-1 text-xs opacity-75">
-          <div className="flex items-center">
-            <MapPin className="h-3 w-3 mr-1" />
-            <span className="line-clamp-1">{classItem.location}</span>
-          </div>
-          <div className="flex items-center">
-            <Users className="h-3 w-3 mr-1" />
-            <span>{classItem.currentStudents || 0}/{classItem.maxStudents} học viên</span>
-          </div>
-        </div>
-        
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs font-medium">{classItem.service}</span>
-          {!isCompleted && (
+        {/* Schedule change request button */}
+        {!isCompleted && (
+          <div className="mt-2">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/trainer/attendance/${classItem._id}`);
+                setSelectedClassForChange(classItem);
+                setShowChangeRequestModal(true);
               }}
-              className="text-xs bg-white bg-opacity-50 px-2 py-1 rounded hover:bg-opacity-75 transition-colors"
+              className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition-colors flex items-center"
             >
-              Điểm danh
+              <MessageSquare className="h-3 w-3 mr-1" />
+              Đổi lịch
             </button>
-          )}
-          {isCompleted && (
-            <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
-              Đã hoàn thành
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -308,6 +688,37 @@ export default function TrainerSchedule() {
                 )}
               </div>
               
+              {/* Schedule Change Requests */}
+              <button 
+                onClick={() => navigate('/trainer/schedule-requests')}
+                className={`px-4 py-2 rounded-lg transition-colors flex items-center relative ${
+                  pendingRequests > 0 
+                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                    : 'bg-gray-600 text-white hover:bg-gray-700'
+                }`}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Yêu cầu đổi lịch
+                {pendingRequests > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {pendingRequests}
+                  </span>
+                )}
+              </button>
+
+              {/* Filter */}
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">Tất cả lớp</option>
+                <option value="ongoing">Đang diễn ra</option>
+                <option value="upcoming">Sắp diễn ra</option>
+                <option value="completed">Đã kết thúc</option>
+              </select>
+              
+              {/* Export */}
               
             </div>
           </div>
@@ -503,6 +914,9 @@ export default function TrainerSchedule() {
           </div>
         </div>
       </div>
+      
+      {/* Schedule Change Request Modal */}
+      <ScheduleChangeRequestModal />
     </div>
   );
 }
