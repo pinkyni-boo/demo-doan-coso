@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
 import {
@@ -33,19 +33,34 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
     wouldRecommend: null,
     isAnonymous: false,
     tags: [],
+    trainerId: "", // Thêm field để chọn trainer
   });
 
   const [newTag, setNewTag] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [trainers, setTrainers] = useState([]);
+  const [loadingTrainers, setLoadingTrainers] = useState(false);
 
   const feedbackTypes = [
     { value: "general", label: "Đánh giá chung", icon: "⭐" },
     { value: "class", label: "Về lớp học", icon: "🏃" },
     { value: "service", label: "Về dịch vụ", icon: "🛎️" },
     { value: "facility", label: "Về cơ sở", icon: "🏢" },
-    { value: "trainer", label: "Về huấn luyện viên", icon: "�" },
+    { value: "trainer", label: "Về huấn luyện viên", icon: "👨‍🏫" },
   ];
+
+  // Map feedbackType to valid type values for the backend
+  const getTypeForFeedbackType = (feedbackType) => {
+    const typeMapping = {
+      general: "general",
+      class: "class",
+      service: "service",
+      facility: "general", // facility feedback is general type
+      trainer: "service", // trainer feedback is service type
+    };
+    return typeMapping[feedbackType] || "general";
+  };
 
   const ratingCategories = [
     {
@@ -99,6 +114,82 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
     "parking",
   ];
 
+  // Fetch trainers when component mounts
+  useEffect(() => {
+    fetchTrainers();
+  }, []);
+
+  const fetchTrainers = async () => {
+    try {
+      console.log("=== FETCHING TRAINERS ===");
+      setLoadingTrainers(true);
+      const token = localStorage.getItem("token");
+
+      console.log("Raw token from localStorage:", token);
+      console.log("Token type:", typeof token);
+      console.log("Token length:", token ? token.length : 0);
+      console.log(
+        "Token is valid:",
+        token &&
+          token !== "null" &&
+          token !== "undefined" &&
+          token.trim() !== ""
+      );
+      console.log("API URL:", "http://localhost:5000/api/users/trainers");
+
+      if (
+        !token ||
+        token === "null" ||
+        token === "undefined" ||
+        token.trim() === ""
+      ) {
+        console.log("Invalid token, user needs to login");
+        toast.error("Vui lòng đăng nhập để xem danh sách huấn luyện viên");
+        return;
+      }
+
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+      console.log("Request headers:", headers);
+
+      const response = await axios.get(
+        "http://localhost:5000/api/users/trainers",
+        {
+          headers,
+        }
+      );
+
+      console.log("Response status:", response.status);
+      console.log("Response data:", response.data);
+
+      if (response.data.success) {
+        console.log("Trainers found:", response.data.data);
+        setTrainers(response.data.data || []);
+      } else {
+        console.log("API returned success=false:", response.data.message);
+        setTrainers([]);
+      }
+    } catch (error) {
+      console.error("=== ERROR FETCHING TRAINERS ===");
+      console.error("Error object:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      console.error("Error message:", error.message);
+
+      if (error.response?.status === 401) {
+        console.log("Authentication failed - token might be invalid");
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+      } else {
+        toast.error("Không thể tải danh sách huấn luyện viên");
+      }
+      setTrainers([]);
+    } finally {
+      setLoadingTrainers(false);
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -116,6 +207,11 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
 
     if (!formData.feedbackType) {
       newErrors.feedbackType = "Vui lòng chọn loại đánh giá";
+    }
+
+    // Validate trainer selection for trainer feedback
+    if (formData.feedbackType === "trainer" && !formData.trainerId) {
+      newErrors.trainerId = "Vui lòng chọn huấn luyện viên";
     }
 
     setErrors(newErrors);
@@ -212,13 +308,14 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
         title: formData.title,
         content: formData.content,
         feedbackType: formData.feedbackType,
-        type: formData.type,
+        type: getTypeForFeedbackType(formData.feedbackType), // Ensure type is correctly mapped
         overallRating: formData.overallRating,
         ratings: cleanedRatings,
         wouldRecommend: formData.wouldRecommend,
         isAnonymous: formData.isAnonymous,
         tags: formData.tags.filter((tag) => tag && tag.trim()),
         ...(clubId && { clubId }),
+        ...(formData.trainerId && { trainerId: formData.trainerId }), // Add trainerId if selected
       };
 
       console.log("Submitting feedback data:", submissionData);
@@ -311,8 +408,12 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
                 onClick={() =>
                   setFormData({
                     ...formData,
-                    type: feedbackType.value,
+                    type: getTypeForFeedbackType(feedbackType.value),
                     feedbackType: feedbackType.value,
+                    trainerId:
+                      feedbackType.value === "trainer"
+                        ? formData.trainerId
+                        : "", // Reset trainerId if not trainer feedback
                   })
                 }
                 className={`p-3 rounded-xl border-2 transition-all text-center ${
@@ -327,6 +428,80 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
             ))}
           </div>
         </div>
+
+        {/* Trainer Selection - Only show when feedback type is trainer */}
+        {formData.feedbackType === "trainer" && (
+          <div>
+            <label className="block text-sm font-semibold text-stone-700 mb-3">
+              Chọn huấn luyện viên *
+            </label>
+            {loadingTrainers ? (
+              <div className="flex items-center justify-center p-8 bg-stone-50 rounded-xl">
+                <div className="w-6 h-6 border-2 border-stone-300 border-t-amber-500 rounded-full animate-spin"></div>
+                <span className="ml-3 text-stone-600">
+                  Đang tải danh sách huấn luyện viên...
+                </span>
+              </div>
+            ) : trainers.length > 0 ? (
+              <div className="space-y-2">
+                <select
+                  value={formData.trainerId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, trainerId: e.target.value })
+                  }
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent ${
+                    errors.trainerId ? "border-red-500" : "border-stone-300"
+                  }`}
+                >
+                  <option value="">-- Chọn huấn luyện viên --</option>
+                  {trainers.map((trainer) => (
+                    <option key={trainer._id} value={trainer._id}>
+                      {trainer.fullName || trainer.username}
+                    </option>
+                  ))}
+                </select>
+                {errors.trainerId && (
+                  <p className="text-red-500 text-sm flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.trainerId}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <p className="text-yellow-800 text-sm">
+                  Hiện tại chưa có huấn luyện viên nào trong hệ thống.
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={fetchTrainers}
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Thử tải lại
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const response = await axios.get(
+                          "http://localhost:5000/api/debug/test-trainers"
+                        );
+                        console.log("Debug response:", response.data);
+                        toast.info("Kiểm tra console để xem debug info");
+                      } catch (error) {
+                        console.error("Debug error:", error);
+                      }
+                    }}
+                    className="text-xs text-green-600 hover:text-green-800 underline"
+                  >
+                    Debug Trainers
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Overall Rating */}
         <div>
@@ -347,39 +522,41 @@ const FeedbackForm = ({ clubId, onClose, onSubmit }) => {
           )}
         </div>
 
-        {/* Category Ratings */}
-        <div>
-          <label className="block text-sm font-semibold text-stone-700 mb-3">
-            Đánh giá chi tiết
-          </label>
-          <div className="space-y-4">
-            {ratingCategories.map((category) => (
-              <div
-                key={category.key}
-                className="flex items-center justify-between p-4 bg-stone-50 rounded-xl"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{category.icon}</span>
-                  <div>
-                    <div className="font-medium text-stone-800">
-                      {category.label}
-                    </div>
-                    <div className="text-sm text-stone-600">
-                      {category.description}
+        {/* Category Ratings - Only show for general feedback */}
+        {formData.feedbackType === "general" && (
+          <div>
+            <label className="block text-sm font-semibold text-stone-700 mb-3">
+              Đánh giá chi tiết
+            </label>
+            <div className="space-y-4">
+              {ratingCategories.map((category) => (
+                <div
+                  key={category.key}
+                  className="flex items-center justify-between p-4 bg-stone-50 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{category.icon}</span>
+                    <div>
+                      <div className="font-medium text-stone-800">
+                        {category.label}
+                      </div>
+                      <div className="text-sm text-stone-600">
+                        {category.description}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-1">
+                    {renderStars(
+                      formData.ratings[category.key],
+                      handleStarClick,
+                      category.key
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  {renderStars(
-                    formData.ratings[category.key],
-                    handleStarClick,
-                    category.key
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Title */}
         <div>

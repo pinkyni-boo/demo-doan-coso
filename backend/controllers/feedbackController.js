@@ -1,4 +1,4 @@
-import Feedback from "../models/Feedback.js";
+import Feedback from "../models/FeedBack.js";
 import User from "../models/User.js";
 import Service from "../models/Service.js";
 import Class from "../models/Class.js";
@@ -27,6 +27,7 @@ export const createFeedback = async (req, res) => {
       clubId,
       classId,
       serviceId,
+      trainerId,
     } = req.body;
 
     console.log("Extracted data:", {
@@ -43,6 +44,15 @@ export const createFeedback = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "Vui lòng điền đầy đủ thông tin bắt buộc",
+      });
+    }
+
+    // Validate trainer selection for trainer feedback
+    if (feedbackType === "trainer" && !trainerId) {
+      console.log("Validation failed - trainer feedback without trainerId");
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn huấn luyện viên để đánh giá",
       });
     }
 
@@ -80,6 +90,7 @@ export const createFeedback = async (req, res) => {
       ...(clubId && { club: clubId }),
       ...(classId && { class: classId }),
       ...(serviceId && { service: serviceId }),
+      ...(trainerId && { trainer: trainerId }),
     });
 
     console.log("Saving feedback to database...");
@@ -92,7 +103,8 @@ export const createFeedback = async (req, res) => {
       .populate("user", "username fullName avatar")
       .populate("club", "name")
       .populate("class", "name")
-      .populate("service", "name");
+      .populate("service", "name")
+      .populate("trainer", "username fullName avatar");
 
     console.log("Sending success response...");
     res.status(201).json({
@@ -168,6 +180,7 @@ export const getFeedbacks = async (req, res) => {
       .populate("club", "name")
       .populate("class", "name")
       .populate("service", "name")
+      .populate("trainer", "username fullName avatar")
       .populate("relatedService", "name")
       .populate("relatedClass", "className")
       .populate("relatedTrainer", "username fullName")
@@ -238,6 +251,7 @@ export const getUserFeedbacks = async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const feedbacks = await Feedback.find({ user: userId })
+      .populate("trainer", "username fullName avatar")
       .populate("relatedService", "name")
       .populate("relatedClass", "className")
       .populate("relatedTrainer", "username fullName")
@@ -294,6 +308,7 @@ export const updateFeedback = async (req, res) => {
       { new: true, runValidators: true }
     )
       .populate("user", "username fullName avatar")
+      .populate("trainer", "username fullName avatar")
       .populate("relatedService", "name")
       .populate("relatedClass", "className")
       .populate("relatedTrainer", "username fullName")
@@ -316,26 +331,45 @@ export const updateFeedback = async (req, res) => {
 export const deleteFeedback = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
 
     const feedback = await Feedback.findById(id);
     if (!feedback) {
-      return res.status(404).json({ message: "Không tìm thấy feedback" });
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy feedback",
+      });
     }
 
     // Kiểm tra quyền sở hữu hoặc admin
-    if (feedback.user.toString() !== userId && req.user.role !== "admin") {
+    if (
+      feedback.user.toString() !== userId.toString() &&
+      req.user.role !== "admin"
+    ) {
       return res.status(403).json({
+        success: false,
         message: "Bạn không có quyền xóa feedback này",
+      });
+    }
+
+    // Nếu là admin, chỉ cho phép xóa feedback đã được duyệt
+    if (req.user.role === "admin" && feedback.status !== "approved") {
+      return res.status(403).json({
+        success: false,
+        message: "Chỉ có thể xóa đánh giá đã được duyệt",
       });
     }
 
     await Feedback.findByIdAndDelete(id);
 
-    res.json({ message: "Xóa feedback thành công" });
+    res.json({
+      success: true,
+      message: "Xóa feedback thành công",
+    });
   } catch (error) {
     console.error("Error deleting feedback:", error);
     res.status(500).json({
+      success: false,
       message: "Lỗi khi xóa feedback",
       error: error.message,
     });
@@ -430,6 +464,7 @@ export const approveFeedback = async (req, res) => {
       .populate("club", "name")
       .populate("class", "name")
       .populate("service", "name")
+      .populate("trainer", "username fullName avatar")
       .populate("approvedBy", "username fullName")
       .populate("adminResponse.respondedBy", "username fullName");
 
@@ -473,6 +508,7 @@ export const getAllFeedbacks = async (req, res) => {
 
     const feedbacks = await Feedback.find(filter)
       .populate("user", "username fullName avatar email")
+      .populate("trainer", "username fullName avatar")
       .populate("relatedService", "name")
       .populate("relatedClass", "className")
       .populate("relatedTrainer", "username fullName")
@@ -605,15 +641,43 @@ export const getFeedbackStats = async (req, res) => {
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
+    // Calculate recommendation rate
+    const recommendedCount = await Feedback.countDocuments({
+      ...filter,
+      wouldRecommend: true,
+    });
+    const totalWithRecommendation = await Feedback.countDocuments({
+      ...filter,
+      wouldRecommend: { $exists: true },
+    });
+    const recommendationRate =
+      totalWithRecommendation > 0
+        ? Math.round((recommendedCount / totalWithRecommendation) * 100)
+        : 0;
+
+    // Format the overall stats to match frontend expectations
+    const formattedStats = {
+      totalFeedbacks: overallStats[0]?.totalFeedbacks || 0,
+      averageRating: overallStats[0]?.averageRating || 0,
+      recommendationRate,
+      distribution: ratingDistribution.map((item) => ({
+        rating: item._id,
+        count: item.count,
+      })),
+    };
+
     res.json({
-      overallStats: overallStats[0] || {},
-      ratingDistribution,
-      feedbackByType,
-      trend,
+      success: true,
+      data: formattedStats,
+      additionalData: {
+        feedbackByType,
+        trend,
+      },
     });
   } catch (error) {
     console.error("Error getting feedback stats:", error);
     res.status(500).json({
+      success: false,
       message: "Lỗi khi lấy thống kê feedback",
       error: error.message,
     });
@@ -744,6 +808,7 @@ export const getAllFeedbacksForAdmin = async (req, res) => {
       .populate("club", "name")
       .populate("class", "name")
       .populate("service", "name")
+      .populate("trainer", "username fullName avatar")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -802,6 +867,7 @@ export const rejectFeedback = async (req, res) => {
       .populate("club", "name")
       .populate("class", "name")
       .populate("service", "name")
+      .populate("trainer", "username fullName avatar")
       .populate("rejectedBy", "username fullName");
 
     if (!feedback) {

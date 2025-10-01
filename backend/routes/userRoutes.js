@@ -10,6 +10,7 @@ import {
   getAllUsers,
   deleteUser,
   createUserByAdmin,
+  getTrainers,
 } from "../controllers/userController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 import { googleLogin } from "../controllers/authController.js";
@@ -25,6 +26,9 @@ router.post("/google-login", googleLogin);
 router.get("/profile", verifyToken, getProfile);
 router.put("/profile", verifyToken, updateProfile);
 router.put("/change-password", verifyToken, changePassword);
+
+// Get trainers - cho phép user đã login lấy danh sách trainer
+router.get("/trainers", verifyToken, getTrainers);
 
 // Admin routes
 router.get("/", verifyToken, verifyAdmin, getAllUsers);

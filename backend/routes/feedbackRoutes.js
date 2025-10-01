@@ -6,6 +6,7 @@ import {
   updateFeedback,
   deleteFeedback,
   getClubFeedbackStats,
+  getFeedbackStats,
   getAllFeedbacksForAdmin,
   approveFeedback,
   rejectFeedback,
@@ -18,6 +19,7 @@ const router = express.Router();
 
 // Public routes
 router.get("/", getFeedbacks);
+router.get("/stats", getFeedbackStats);
 router.get("/club/:clubId/stats", getClubFeedbackStats);
 
 // Protected routes (cần đăng nhập)
@@ -32,5 +34,6 @@ router.get("/admin/stats", verifyToken, verifyAdmin, getFeedbackStatsForAdmin);
 router.patch("/admin/:id/approve", verifyToken, verifyAdmin, approveFeedback);
 router.patch("/admin/:id/reject", verifyToken, verifyAdmin, rejectFeedback);
 router.post("/admin/:id/respond", verifyToken, verifyAdmin, respondToFeedback);
+router.delete("/admin/:id", verifyToken, verifyAdmin, deleteFeedback);
 
 export default router;

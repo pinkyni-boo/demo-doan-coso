@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Clock,
   Ban,
+  Trash2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -30,11 +31,17 @@ const FeedbackManagement = () => {
     rating: "all",
     search: "",
   });
+  const [searchTerm, setSearchTerm] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
 
+  // Debounce search
   useEffect(() => {
-    fetchFeedbacks();
-  }, [filters]);
+    const timer = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search: searchTerm }));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const fetchFeedbacks = async () => {
     try {
@@ -46,33 +53,59 @@ const FeedbackManagement = () => {
         return;
       }
 
+      console.log("Fetching feedbacks with filters:", filters);
+
       const response = await axios.get(
         "http://localhost:5000/api/feedback/admin/all",
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          params: filters,
+          params: {
+            status: filters.status !== "all" ? filters.status : undefined,
+            type: filters.type !== "all" ? filters.type : undefined,
+            rating: filters.rating !== "all" ? filters.rating : undefined,
+            search: filters.search || undefined,
+          },
         }
       );
 
+      console.log("Feedbacks response:", response.data);
+
       if (response.data.success) {
-        setFeedbacks(response.data.data);
+        setFeedbacks(response.data.data || []);
       } else {
-        throw new Error(response.data.message);
+        throw new Error(response.data.message || "Unknown error");
       }
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
       if (error.response?.status === 401) {
         toast.error("Phiên đăng nhập đã hết hạn");
         localStorage.removeItem("token");
+      } else if (error.response?.status === 404) {
+        // API endpoint not found, set empty array
+        setFeedbacks([]);
       } else {
         toast.error("Không thể tải danh sách đánh giá");
+        setFeedbacks([]); // Set empty array to prevent infinite reload
       }
     } finally {
       setLoading(false);
     }
   };
+
+  // Initial load
+  useEffect(() => {
+    fetchFeedbacks();
+  }, []);
+
+  // Reload when filters change
+  useEffect(() => {
+    // Skip if this is the initial render or if already loading
+    if (loading) return;
+
+    fetchFeedbacks();
+  }, [filters.status, filters.type, filters.rating, filters.search]);
 
   const handleApproveFeedback = async (feedbackId) => {
     try {
@@ -181,6 +214,50 @@ const FeedbackManagement = () => {
     } catch (error) {
       console.error("Error responding to feedback:", error);
       toast.error("Không thể gửi phản hồi");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteFeedback = async (feedbackId) => {
+    try {
+      // Confirm before deleting
+      const isConfirmed = window.confirm(
+        "Bạn có chắc chắn muốn xóa đánh giá này? Hành động này không thể hoàn tác."
+      );
+
+      if (!isConfirmed) return;
+
+      setActionLoading(feedbackId);
+      const token = localStorage.getItem("token");
+
+      const response = await axios.delete(
+        `http://localhost:5000/api/feedback/admin/${feedbackId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        // Remove feedback from local state
+        setFeedbacks(feedbacks.filter((fb) => fb._id !== feedbackId));
+        toast.success("Đã xóa đánh giá thành công");
+
+        // Close modal if this feedback is being viewed
+        if (selectedFeedback?._id === feedbackId) {
+          setShowDetailModal(false);
+          setSelectedFeedback(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      if (error.response?.status === 403) {
+        toast.error("Chỉ có thể xóa đánh giá đã được duyệt");
+      } else {
+        toast.error("Không thể xóa đánh giá");
+      }
     } finally {
       setActionLoading(null);
     }
@@ -444,6 +521,20 @@ const FeedbackManagement = () => {
               </div>
             )}
 
+            {/* Delete Button for Approved Feedbacks */}
+            {feedback.status === "approved" && (
+              <div className="mb-4">
+                <button
+                  onClick={() => handleDeleteFeedback(feedback._id)}
+                  disabled={actionLoading === feedback._id}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Xóa đánh giá
+                </button>
+              </div>
+            )}
+
             {/* Response Form */}
             {feedback.status === "approved" && !feedback.adminResponse && (
               <div className="mt-4">
@@ -591,10 +682,8 @@ const FeedbackManagement = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 h-4 w-4" />
               <input
                 type="text"
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm kiếm..."
                 className="w-full pl-10 pr-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
@@ -731,6 +820,17 @@ const FeedbackManagement = () => {
                               <X className="h-4 w-4" />
                             </button>
                           </>
+                        )}
+
+                        {feedback.status === "approved" && (
+                          <button
+                            onClick={() => handleDeleteFeedback(feedback._id)}
+                            disabled={actionLoading === feedback._id}
+                            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Xóa đánh giá"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         )}
                       </div>
                     </td>

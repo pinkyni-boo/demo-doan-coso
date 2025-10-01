@@ -8,14 +8,15 @@ import serviceRoutes from "./routes/serviceRoutes.js";
 import clubRoutes from "./routes/clubRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import membershipRoutes from "./routes/membershipRoutes.js"; 
+import membershipRoutes from "./routes/membershipRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
-import statsRoutes from "./routes/statsRoutes.js"; 
+import statsRoutes from "./routes/statsRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
-import trainerRoutes from "./routes/trainerRoutes.js"; 
-import adminRoutes from "./routes/adminRoutes.js"; 
+import trainerRoutes from "./routes/trainerRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import debugRoutes from "./routes/debugRoutes.js";
 
 dotenv.config({ path: "./backend/.env" });
 
@@ -33,11 +34,12 @@ app.use("/api/memberships", membershipRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/clubs", clubRoutes);
-app.use("/api/stats", statsRoutes); 
+app.use("/api/stats", statsRoutes);
 app.use("/api/feedback", feedbackRoutes);
-app.use("/api/trainers", trainerRoutes); 
-app.use("/api/admin", adminRoutes); 
-app.use("/api/notifications", notificationRoutes); 
+app.use("/api/trainers", trainerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/debug", debugRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;

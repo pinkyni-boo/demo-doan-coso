@@ -4,9 +4,18 @@ import User from "../models/User.js";
 // Middleware xác thực token
 export const verifyToken = async (req, res, next) => {
   try {
-    const token = req.header("Authorization")?.replace("Bearer ", "");
+    const authHeader = req.header("Authorization");
+    console.log("=== TOKEN VERIFICATION ===");
+    console.log("Authorization header:", authHeader);
+
+    const token = authHeader?.replace("Bearer ", "");
+    console.log(
+      "Extracted token:",
+      token ? `${token.substring(0, 20)}...` : "No token"
+    );
 
     if (!token) {
+      console.log("No token provided");
       return res.status(401).json({
         success: false,
         message: "Không có token xác thực, truy cập bị từ chối",
@@ -15,6 +24,7 @@ export const verifyToken = async (req, res, next) => {
 
     // Check if token is not just empty string or invalid format
     if (token.trim() === "" || token === "null" || token === "undefined") {
+      console.log("Invalid token format:", token);
       return res.status(401).json({
         success: false,
         message: "Token không hợp lệ",
@@ -22,21 +32,27 @@ export const verifyToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Token decoded successfully for user:", decoded.userId);
+
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {
+      console.log("User not found for token");
       return res.status(401).json({
         success: false,
         message: "Token không hợp lệ, người dùng không tồn tại",
       });
     }
 
+    console.log("User found:", user.username, "Role:", user.role);
+
     // Kiểm tra tài khoản có bị khóa không
     if (user.isAccountLocked) {
-      return res.status(403).json({ 
+      console.log("Account is locked");
+      return res.status(403).json({
         message: "Tài khoản đã bị khóa",
         reason: user.lockReason || "Tài khoản bị khóa bởi admin",
-        isLocked: true
+        isLocked: true,
       });
     }
 
@@ -114,15 +130,15 @@ export const verifyAdminOrTrainer = (req, res, next) => {
     if (req.user.role !== "admin" && req.user.role !== "trainer") {
       return res
         .status(403)
-        .json({ message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập" });
+        .json({
+          message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
+        });
     }
 
     next();
   } catch (error) {
     console.error("Admin/Trainer verification error:", error);
-    return res
-      .status(500)
-      .json({ message: "Lỗi server khi xác thực quyền" });
+    return res.status(500).json({ message: "Lỗi server khi xác thực quyền" });
   }
 };
 
@@ -133,4 +149,10 @@ export const isTrainer = verifyTrainer;
 export const isAdminOrTrainer = verifyAdminOrTrainer;
 export const authenticateToken = verifyToken;
 
-export default { verifyToken, verifyAdmin, verifyUserOrAdmin, verifyTrainer, verifyAdminOrTrainer };
+export default {
+  verifyToken,
+  verifyAdmin,
+  verifyUserOrAdmin,
+  verifyTrainer,
+  verifyAdminOrTrainer,
+};
