@@ -10,6 +10,7 @@ import {
   deleteEnrollment,
   getClassById,
   getClassDetails,
+  updateEnrollmentPayment,
 } from "../controllers/classController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -34,6 +35,7 @@ router.get("/", getAllClasses);
 router.post("/enroll", debugMiddleware, verifyToken, enrollClass);
 router.get("/user/:userId", verifyToken, getUserClasses);
 router.delete("/enrollment/:enrollmentId", verifyToken, deleteEnrollment);
+router.put("/enrollment/payment", verifyToken, updateEnrollmentPayment);
 
 // Admin routes
 router.post("/", verifyToken, verifyAdmin, createClass);

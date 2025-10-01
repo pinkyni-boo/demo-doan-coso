@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 import {
   Calendar,
@@ -280,10 +279,8 @@ export default function AttendanceManagement() {
       {!selectedClass && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {classes.map((classItem) => (
-            <motion.div
+            <div
               key={classItem._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => handleClassSelect(classItem)}
             >
@@ -334,7 +331,7 @@ export default function AttendanceManagement() {
                   Tạo buổi học mới
                 </button>
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
@@ -402,10 +399,8 @@ export default function AttendanceManagement() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sessions.map((session) => (
-                <motion.div
+                <div
                   key={session.sessionNumber}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
                   className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow cursor-pointer"
                   onClick={() => {
                     setSelectedSession(session);
@@ -456,7 +451,7 @@ export default function AttendanceManagement() {
                       ></div>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}

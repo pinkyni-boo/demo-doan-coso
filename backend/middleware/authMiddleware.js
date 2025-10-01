@@ -31,6 +31,16 @@ export const verifyToken = async (req, res, next) => {
       });
     }
 
+    // Kiểm tra tài khoản có bị khóa không
+    if (user.isAccountLocked) {
+      return res.status(403).json({ 
+        message: "Tài khoản đã bị khóa",
+        reason: user.lockReason || "Tài khoản bị khóa bởi admin",
+        isLocked: true
+      });
+    }
+
+    // Gán user vào req
     req.user = user;
     next();
   } catch (error) {
@@ -74,4 +84,53 @@ export const verifyUserOrAdmin = (req, res, next) => {
   }
 };
 
-export default { verifyToken, verifyAdmin, verifyUserOrAdmin };
+export const verifyTrainer = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Không có thông tin user" });
+    }
+
+    if (req.user.role !== "trainer") {
+      return res
+        .status(403)
+        .json({ message: "Chỉ huấn luyện viên mới có quyền truy cập" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Trainer verification error:", error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi server khi xác thực quyền huấn luyện viên" });
+  }
+};
+
+export const verifyAdminOrTrainer = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Không có thông tin user" });
+    }
+
+    if (req.user.role !== "admin" && req.user.role !== "trainer") {
+      return res
+        .status(403)
+        .json({ message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Admin/Trainer verification error:", error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi server khi xác thực quyền" });
+  }
+};
+
+// Thêm alias exports để backward compatibility
+export const isAuthenticated = verifyToken;
+export const isAdmin = verifyAdmin;
+export const isTrainer = verifyTrainer;
+export const isAdminOrTrainer = verifyAdminOrTrainer;
+export const authenticateToken = verifyToken;
+
+export default { verifyToken, verifyAdmin, verifyUserOrAdmin, verifyTrainer, verifyAdminOrTrainer };

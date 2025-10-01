@@ -2,6 +2,7 @@ import Payment from "../models/Payment.js";
 import ClassEnrollment from "../models/ClassEnrollment.js";
 import Membership from "../models/Membership.js";
 import Class from "../models/Class.js";
+import NotificationService from "../services/NotificationService.js";
 
 export const createPayment = async (req, res) => {
   try {
@@ -35,6 +36,10 @@ export const createPayment = async (req, res) => {
     });
 
     await payment.save();
+
+    // Gửi thông báo cho admin khi có yêu cầu thanh toán mới
+    const user = req.user;
+    await NotificationService.notifyAdminPaymentConfirmation(payment, user);
 
     res.status(201).json({
       message: "Tạo yêu cầu thanh toán thành công",
