@@ -27,7 +27,8 @@ import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import TrainerManagement from "./components/Admin/qlhlv"; // Import component quản lý huấn luyện viên
+import FeedbackPage from "./components/Feedback/FeedbackPage";
+import TrainerManagement from "./components/Admin/qlhlv";
 import TrainerDashboard from "./components/Trainer/Dashboard";
 import TrainerClasses from "./components/Trainer/Classes";
 import TrainerSchedule from "./components/Trainer/TrainerSchedule";
@@ -103,8 +104,6 @@ function App({ appName }) {
         <div className="app-container">
           <NavBar user={user} setUser={setUser} />
           <main className="pt-16 main-content">
-            {" "}
-            {/* Add padding-top for fixed navbar */}
             <Routes>
               {/* Main routes */}
               <Route path="/" element={<HomePage />} />
@@ -112,7 +111,6 @@ function App({ appName }) {
               <Route path="/sign-up" element={<SignUp />} />
               <Route path="/club" element={<Club />} />
               <Route path="/services" element={<ServicePage />} />
-              {/* Fix: Thêm route detail trước route :id */}
               <Route path="/services/detail/:id" element={<ServiceDetail />} />
               <Route path="/services/:id" element={<ServiceDetail />} />
               <Route path="/membership" element={<MembershipPage />} />
@@ -121,13 +119,19 @@ function App({ appName }) {
               <Route path="/user" element={<UserProfile />} />
               <Route path="/classes" element={<ViewClasses />} />
               <Route path="/my-classes" element={<UserClasses />} />
+              <Route path="/classes/:id/details" element={<ClassDetails />} />
+              
+              {/* Feedback routes */}
+              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/feedback/club/:clubId" element={<FeedbackPage />} />
+
+              {/* Trainer routes */}
               <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
               <Route path="/trainer/classes" element={<TrainerClasses />} />
               <Route path="/trainer/schedule" element={<TrainerSchedule />} />
               <Route path="/trainer/schedule-requests" element={<ScheduleChangeRequests />} />
               <Route path="/trainer/class/:classId" element={<TrainerClassDetail />} />
               <Route path="/trainer/attendance/:classId" element={<AttendanceFlow />} />
-              <Route path="/classes/:id/details" element={<ClassDetails />} />
 
               {/* Admin routes - tất cả qua dashboard */}
               <Route
@@ -145,6 +149,7 @@ function App({ appName }) {
                       <Route path="clubs" element={<AdminDashboard />} />
                       <Route path="images" element={<AdminDashboard />} />
                       <Route path="stats" element={<AdminDashboard />} />
+                      <Route path="trainers" element={<TrainerManagement />} />
                       <Route path="schedule-requests" element={<AdminScheduleRequests />} />
                       <Route
                         path=""
@@ -185,8 +190,9 @@ function App({ appName }) {
   );
 }
 
-const GOOGLE_CLIENT_ID = "95171768612-385ic851574oc5145p5pkn7319ok3vfr.apps.googleusercontent.com";
-const APP_NAME = "DACN-web"; // Đặt tên app ở đây
+const GOOGLE_CLIENT_ID =
+  "95171768612-385ic851574oc5145p5pkn7319ok3vfr.apps.googleusercontent.com";
+const APP_NAME = "DACN-web";
 
 export default function RootApp() {
   return (

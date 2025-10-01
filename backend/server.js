@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 
-
 import authRoutes from "./routes/authRoutes.js";
 import serviceRoutes from "./routes/serviceRoutes.js";
 import clubRoutes from "./routes/clubRoutes.js";
@@ -13,20 +12,18 @@ import membershipRoutes from "./routes/membershipRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
 import statsRoutes from "./routes/statsRoutes.js"; 
+import feedbackRoutes from "./routes/feedbackRoutes.js";
 import trainerRoutes from "./routes/trainerRoutes.js"; 
 import adminRoutes from "./routes/adminRoutes.js"; 
 import notificationRoutes from "./routes/notificationRoutes.js";
-
 
 dotenv.config({ path: "./backend/.env" });
 
 const app = express();
 
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -37,10 +34,10 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/clubs", clubRoutes);
 app.use("/api/stats", statsRoutes); 
+app.use("/api/feedback", feedbackRoutes);
 app.use("/api/trainers", trainerRoutes); 
 app.use("/api/admin", adminRoutes); 
 app.use("/api/notifications", notificationRoutes); 
-
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -49,7 +46,6 @@ if (!MONGODB_URI) {
   console.error("❌ MONGO_URI is missing in .env file.");
   process.exit(1);
 }
-
 
 mongoose
   .connect(MONGODB_URI, {
@@ -66,7 +62,6 @@ mongoose
     console.error("❌ Failed to connect to MongoDB:", error);
     process.exit(1);
   });
-
 
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err);

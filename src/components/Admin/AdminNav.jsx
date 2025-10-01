@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Crown,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -83,6 +84,12 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
       label: "Thống kê",
       icon: <BarChart size={20} />,
       description: "Báo cáo & phân tích",
+    },
+    {
+      id: "feedback",
+      label: "Đánh giá",
+      icon: <MessageSquare size={20} />,
+      description: "Quản lý feedback",
     },
   ];
 

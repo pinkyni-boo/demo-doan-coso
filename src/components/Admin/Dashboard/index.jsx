@@ -18,6 +18,7 @@ import ClassManagement from "../ClassManagement";
 import AttendanceManagement from "../AttendanceManagement";
 import Statistics from "../Statistics";
 import UserManagement from "../UserManagement";
+import FeedbackManagement from "../FeedbackManagement";
 import TrainerManagement from "../qlhlv";
 import AdminScheduleRequests from "../AdminScheduleRequests";
 
@@ -50,7 +51,6 @@ const ImageManager = () => {
   );
 };
 
-
 const AdminDashboard = () => {
   const [activeModule, setActiveModule] = useState("dashboard");
 
@@ -75,6 +75,8 @@ const AdminDashboard = () => {
         return <AttendanceManagement />;
       case "stats":
         return <Statistics />;
+      case "feedback":
+        return <FeedbackManagement />;
       case "trainers":
         return <TrainerManagement />;
       case "schedule-requests":
@@ -141,16 +143,20 @@ const DashboardHome = ({ setActiveModule }) => {
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Header */}
-      
-
       {/* Enhanced Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        
+        <StatCard
+          title="Tổng thành viên"
+          value={stats?.stats?.totalUsers || 0}
+          change={`${stats?.stats?.newMembersThisMonth || 0} thành viên mới`}
+          icon={<Users className="h-7 w-7" />}
+          color="blue"
+          trend="up"
+        />
         <StatCard
           title="Doanh thu tháng"
           value={formatCurrency(stats?.stats?.monthlyRevenue || 0)}
@@ -167,7 +173,14 @@ const DashboardHome = ({ setActiveModule }) => {
           color="purple"
           trend="stable"
         />
-        
+        <StatCard
+          title="Tổng CLB"
+          value={stats?.stats?.totalClubs || 0}
+          change={`${stats?.stats?.totalServices || 0} dịch vụ`}
+          icon={<Building className="h-7 w-7" />}
+          color="amber"
+          trend="stable"
+        />
       </div>
 
       {/* Enhanced Charts Section */}
@@ -261,7 +274,7 @@ const DashboardHome = ({ setActiveModule }) => {
         <h2 className="text-2xl font-bold text-stone-800 vintage-heading mb-6">
           Truy cập nhanh
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           <QuickAction
             title="Quản lý lớp học"
             icon={<Calendar className="h-6 w-6" />}
@@ -297,6 +310,12 @@ const DashboardHome = ({ setActiveModule }) => {
             icon={<TrendingUp className="h-6 w-6" />}
             onClick={() => setActiveModule("stats")}
             color="indigo"
+          />
+          <QuickAction
+            title="Phản hồi"
+            icon={<ClipboardList className="h-6 w-6" />}
+            onClick={() => setActiveModule("feedback")}
+            color="blue"
           />
           <QuickAction
             title="Quản lý HLV"
@@ -411,6 +430,8 @@ const QuickAction = ({ title, icon, onClick, color }) => {
     pink: "from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700",
     indigo:
       "from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700",
+    orange:
+      "from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700",
   };
 
   return (

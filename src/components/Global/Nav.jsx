@@ -138,6 +138,7 @@ export default function NavBar({ user, setUser }) {
     { name: "Dịch vụ", path: "/services" },
     { name: "Lớp học", path: "/classes" },
     { name: "Lịch của tôi", path: "/my-classes" },
+    { name: "Đánh giá", path: "/feedback" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
   ];
