@@ -62,10 +62,16 @@ export default function Login({ setUser }) {
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
-      setError(
-        error.response?.data?.message ||
-          "Đăng nhập thất bại, vui lòng thử lại sau."
-      );
+      
+      // Kiểm tra nếu tài khoản bị khóa
+      if (error.response?.status === 403 && error.response?.data?.isLocked) {
+        setError(`Tài khoản đã bị khóa: ${error.response.data.reason || 'Tài khoản bị khóa bởi admin'}`);
+      } else {
+        setError(
+          error.response?.data?.message ||
+            "Đăng nhập thất bại, vui lòng thử lại sau."
+        );
+      }
     } finally {
       setLoading(false);
     }

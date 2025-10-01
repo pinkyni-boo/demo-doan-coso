@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, Settings, Crown, Shield } from "lucide-react";
+import { Menu, X, User, LogOut, Settings, Crown, Shield, Calendar, Bell } from "lucide-react";
+import NotificationCenter from "../Common/NotificationCenter";
+import useNotifications from "../../hooks/useNotifications";
 
 export default function NavBar({ user, setUser }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0); // State để nhận từ NotificationCenter
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Hook quản lý notifications
+  const { unreadCount: hookUnreadCount } = useNotifications();
+  
+  // Show notification button for all logged in users
+  const showNotifications = !!user; // Show for all logged in users
+  
 
   // Kiểm tra đường dẫn hiện tại để highlight menu item active
   const isActive = (path) => {
@@ -44,9 +55,11 @@ export default function NavBar({ user, setUser }) {
 
   // Function để render avatar với better error handling
   const renderAvatar = (size = "w-10 h-10") => {
-    // Debug avatar URL
-    const avatarUrl = user?.avatar?.url || user?.avatar;
-    console.log("Avatar URL:", avatarUrl); // Debug line - có thể xóa sau
+    // Debug avatar URL - kiểm tra nhiều thuộc tính có thể
+    const avatarUrl = user?.avatar?.url || user?.avatar || user?.avatarUrl || user?.profileImage;
+    
+    // Bỏ debug log để tránh spam console
+    // console.log("Avatar URL:", avatarUrl);
 
     if (avatarUrl && !avatarError) {
       return (
@@ -55,11 +68,13 @@ export default function NavBar({ user, setUser }) {
           alt={user.username || "User"}
           className={`${size} rounded-full object-cover border-2 border-white/30 shadow-lg`}
           onError={(e) => {
-            console.log("Avatar load error:", e); // Debug line
+            // Bỏ debug log để tránh spam console
+            // console.log("Avatar load error:", e);
             handleAvatarError();
           }}
           onLoad={() => {
-            console.log("Avatar loaded successfully"); // Debug line
+            // Bỏ debug log để tránh spam console  
+            // console.log("Avatar loaded successfully");
             setAvatarError(false);
           }}
           style={{
@@ -117,7 +132,7 @@ export default function NavBar({ user, setUser }) {
     { name: "Dịch vụ", path: "/services" },
   ];
 
-  // Menu đầy đủ cho người đã đăng nhập
+  // Menu cho người dùng thường
   const authenticatedNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
@@ -127,10 +142,21 @@ export default function NavBar({ user, setUser }) {
     { name: "Thanh toán", path: "/payment" },
   ];
 
-  // Chọn menu dựa trên trạng thái đăng nhập
-  const navLinks = user ? authenticatedNavLinks : publicNavLinks;
+  // Menu cho trainer (bỏ membership và payment)
+  const trainerNavLinks = [
+    { name: "CLB", path: "/club" },
+    { name: "Dịch vụ", path: "/services" },
+    { name: "Lịch dạy", path: "/trainer/schedule" },
+    { name: "Lớp học", path: "/trainer/classes" },
+  ];
+
+  // Chọn menu dựa trên role và trạng thái đăng nhập
+  const navLinks = user 
+    ? (user.role === "trainer" ? trainerNavLinks : authenticatedNavLinks)
+    : publicNavLinks;
 
   return (
+    <>
     <header
       className={`navbar-fixed transition-all duration-500 ${
         isScrolled ? "navbar-scrolled py-3" : "navbar-transparent py-5"
@@ -195,6 +221,40 @@ export default function NavBar({ user, setUser }) {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                {/* Notification Button - Always show for logged in users */}
+                {showNotifications && (
+                  <div className="relative" >
+                    <button
+                      onClick={() => setNotificationOpen(!notificationOpen)}
+                      className={`relative p-3 rounded-full transition-all duration-300 hover:scale-105 ${
+                        isScrolled
+                          ? "bg-white  border-amber-200 hover:border-amber-300 shadow-lg text-stone-700 hover:text-amber-600"
+                          : "bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 text-white hover:text-amber-200"
+                      }`}
+                      style={{ minWidth: '48px', minHeight: '48px' /* ensure minimum size */ }}
+                    >
+                      {/* Bell icon with emoji fallback */}
+                      <Bell className="h-5 w-5" style={{ display: 'block' }} />
+                   
+                      {(unreadCount || 0) > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                          {(unreadCount || 0) > 99 ? '99+' : (unreadCount || 0)}
+                        </span>
+                      )}
+                    </button>
+                    
+                    {/* Notification Dropdown - positioned centered under bell button */}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2">
+                      <NotificationCenter 
+                        isOpen={notificationOpen} 
+                        onClose={() => setNotificationOpen(false)} 
+                        userRole={user?.role || 'user'}
+                        onUnreadCountChange={setUnreadCount}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* User Menu với Avatar */}
                 <div className="relative">
                   <button
@@ -301,6 +361,17 @@ export default function NavBar({ user, setUser }) {
                           >
                             <Settings className="h-4 w-4 mr-3 text-amber-600" />
                             Dashboard
+                          </Link>
+                        )}
+
+                        {user.role === "trainer" && (
+                          <Link
+                            to="/trainer/dashboard"
+                            className="flex items-center px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Calendar className="h-4 w-4 mr-3 text-amber-600" />
+                            Dashboard HLV
                           </Link>
                         )}
 
@@ -414,6 +485,16 @@ export default function NavBar({ user, setUser }) {
                   </Link>
                 )}
 
+                {user.role === "trainer" && (
+                  <Link
+                    to="/trainer/dashboard"
+                    className="block px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200 rounded-lg"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard HLV
+                  </Link>
+                )}
+
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left px-4 py-3 vintage-sans text-red-600 hover:bg-red-50 transition-colors duration-200 rounded-lg"
@@ -443,5 +524,6 @@ export default function NavBar({ user, setUser }) {
         </div>
       )}
     </header>
+    </>
   );
 }

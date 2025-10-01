@@ -88,9 +88,29 @@ export const createSession = async (req, res) => {
 
     console.log("Attendance records to create:", attendanceRecords.length);
 
-    // Lưu tất cả records
-    const savedRecords = await Attendance.insertMany(attendanceRecords);
-    console.log("Saved records:", savedRecords.length);
+    try {
+      // Sử dụng insertMany với ordered: false để bỏ qua duplicate errors
+      const savedRecords = await Attendance.insertMany(attendanceRecords, { 
+        ordered: false 
+      });
+      console.log("Saved records:", savedRecords.length);
+    } catch (error) {
+      // Nếu có lỗi duplicate, kiểm tra xem có record nào được tạo không
+      if (error.code === 11000) {
+        console.log("Some duplicate records detected, checking existing records...");
+        const existingRecords = await Attendance.find({
+          classId: new mongoose.Types.ObjectId(classId),
+          sessionNumber: parseInt(sessionNumber)
+        });
+        
+        if (existingRecords.length === 0) {
+          throw error; // Nếu không có record nào thì throw error
+        }
+        console.log("Session already exists with", existingRecords.length, "records");
+      } else {
+        throw error;
+      }
+    }
 
     // Kiểm tra nếu đây là buổi cuối cùng thì cập nhật status thành completed
     if (sessionNumber === classExists.totalSessions) {

@@ -404,6 +404,48 @@ export const getClassMembers = async (req, res) => {
   }
 };
 
+// Cập nhật trạng thái thanh toán của enrollment
+export const updateEnrollmentPayment = async (req, res) => {
+  try {
+    const { classId, userId, paymentStatus } = req.body;
+
+    console.log("Updating payment status:", { classId, userId, paymentStatus });
+
+    const enrollment = await ClassEnrollment.findOneAndUpdate(
+      { 
+        class: classId,
+        user: userId 
+      },
+      { 
+        paymentStatus: paymentStatus 
+      },
+      { 
+        new: true 
+      }
+    ).populate("user", "username email")
+     .populate("class", "className");
+
+    if (!enrollment) {
+      return res.status(404).json({
+        message: "Không tìm thấy enrollment"
+      });
+    }
+
+    console.log("Payment status updated:", enrollment);
+
+    res.status(200).json({
+      message: "Cập nhật trạng thái thanh toán thành công",
+      enrollment
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({
+      message: "Lỗi khi cập nhật trạng thái thanh toán",
+      error: error.message,
+    });
+  }
+};
+
 // Lấy lớp học của user với status update
 export const getUserClasses = async (req, res) => {
   try {

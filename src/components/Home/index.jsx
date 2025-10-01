@@ -239,7 +239,7 @@ export default function HomePage() {
           <VintageGrid cols={{ sm: 1, md: 2, lg: 4 }} gap={8}>
             {features.map((feature, index) => (
               <motion.div
-                key={index}
+                key={`feature-${index}-${feature.title}`}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -485,7 +485,7 @@ export default function HomePage() {
           <VintageGrid cols={{ sm: 1, md: 2, lg: 4 }} gap={8}>
             {trainers.map((trainer, index) => (
               <motion.div
-                key={index}
+                key={`trainer-${index}-${trainer.name || trainer.id || index}`}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -555,7 +555,7 @@ export default function HomePage() {
           <VintageGrid cols={{ sm: 1, md: 3 }} gap={8}>
             {testimonials.map((testimonial, index) => (
               <motion.div
-                key={index}
+                key={`testimonial-${index}-${testimonial.name || index}`}
                 initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -658,7 +658,7 @@ function TestimonialCard({ name, role, content, rating, image }) {
     <VintageCard className="p-6 h-full luxury">
       <div className="flex mb-4">
         {[...Array(rating)].map((_, i) => (
-          <Star key={i} className="h-5 w-5 text-vintage-gold fill-current" />
+          <Star key={`star-${i}`} className="h-5 w-5 text-vintage-gold fill-current" />
         ))}
       </div>
 

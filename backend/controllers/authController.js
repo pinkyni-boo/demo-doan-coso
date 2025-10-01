@@ -75,6 +75,15 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Tài khoản không tồn tại" });
     }
 
+    // Kiểm tra tài khoản có bị khóa không
+    if (user.isAccountLocked) {
+      return res.status(403).json({ 
+        message: "Tài khoản đã bị khóa",
+        reason: user.lockReason || "Tài khoản bị khóa bởi admin",
+        isLocked: true
+      });
+    }
+
     // Direct password comparison using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
 
