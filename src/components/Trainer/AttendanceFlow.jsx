@@ -13,7 +13,9 @@ import {
   Save,
   UserCheck,
   UserX,
-  Plus
+  Plus,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
 
 export default function AttendanceFlow() {
@@ -36,10 +38,42 @@ export default function AttendanceFlow() {
   const [bulkAttendanceMode, setBulkAttendanceMode] = useState(false);
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [attendanceNotes, setAttendanceNotes] = useState({});
+  
+  // Notification state
+  const [notification, setNotification] = useState(null);
+  const [countdownTimer, setCountdownTimer] = useState(null);
+  const [autoBackSeconds, setAutoBackSeconds] = useState(0);
 
   // Helper functions
-  const showNotification = (message, type = "success") => {
+  const showNotification = (message, type = "success", autoHide = true, autoBackAfter = 0) => {
     console.log(`${type.toUpperCase()}: ${message}`);
+    setNotification({ message, type, autoBackAfter });
+    
+    // Clear existing timer
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+    }
+    
+    if (autoBackAfter > 0) {
+      setAutoBackSeconds(autoBackAfter);
+      const timer = setInterval(() => {
+        setAutoBackSeconds(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setNotification(null);
+            handleBackToSessions();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      setCountdownTimer(timer);
+    } else if (autoHide) {
+      // Auto hide notification after 3 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+    }
   };
 
   const fetchClassData = async () => {
@@ -345,6 +379,15 @@ export default function AttendanceFlow() {
     }
   }, [classId]);
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+      }
+    };
+  }, [countdownTimer]);
+
   // Show loading screen for sessions view
   if (loading && currentView === 'sessions') {
     return (
@@ -491,6 +534,62 @@ export default function AttendanceFlow() {
     }
   };
 
+  // Handle reset attendance
+  const handleResetAttendance = () => {
+    // Confirm before reset
+    if (!window.confirm("Bạn có chắc chắn muốn reset lại toàn bộ điểm danh? Tất cả dữ liệu điểm danh hiện tại sẽ bị xóa.")) {
+      return;
+    }
+
+    // Reset all attendance to undefined/not marked
+    const resetAttendanceList = attendanceList.map(record => ({
+      ...record,
+      isPresent: undefined,
+      notes: ""
+    }));
+    
+    setAttendanceList(resetAttendanceList);
+    setAttendanceNotes({});
+    setSelectedStudents([]);
+    setBulkAttendanceMode(false);
+    
+    showNotification("🔄 Đã reset lại toàn bộ điểm danh!", "warning", true);
+  };
+
+  // Handle complete attendance - now saves and goes back
+  const handleCompleteAttendance = async () => {
+    const presentCount = attendanceList.filter(record => record.isPresent === true).length;
+    const absentCount = attendanceList.filter(record => record.isPresent === false).length;
+    const totalCount = attendanceList.length;
+    
+    // Gửi thông báo cho học viên
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        "http://localhost:5000/api/notifications/attendance-complete",
+        {
+          classId,
+          sessionNumber: selectedSession.sessionNumber,
+          presentCount,
+          absentCount,
+          totalCount
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error("Error sending attendance notifications:", error);
+      // Không gián đoạn flow chính nếu thông báo lỗi
+    }
+    
+    // Show completion notification with countdown
+    showNotification(
+      `✅ Đã lưu điểm danh thành công! Có mặt: ${presentCount}/${totalCount} học viên`,
+      "success",
+      false, // don't auto hide
+      3 // auto back after 3 seconds
+    );
+  };
+
   // Filter attendance based on search term
   const filteredAttendance = attendanceList.filter((record) => {
     if (!record) return false;
@@ -523,7 +622,7 @@ export default function AttendanceFlow() {
     console.log("student.fullName:", student?.fullName);
     console.log("student.name:", student?.name);
     
-    const studentName = student?.fullname || student?.fullName || student?.name || student?.studentName || 'Không có tên';
+    const studentName = student?.username || student?.username || student?.name || student?.studentName || 'Không có tên';
     const studentEmail = student?.email || student?.studentEmail || student?.username || '@unknow';
     
     console.log("Final studentName:", studentName);
@@ -1037,15 +1136,109 @@ export default function AttendanceFlow() {
               </div>
             )}
           </div>
+
+          {/* Complete Attendance Button */}
+          <div className="p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">
+                  {attendanceList.filter(record => record.isPresent === true).length}
+                </span> có mặt / 
+                <span className="font-medium">
+                  {attendanceList.filter(record => record.isPresent === false).length}
+                </span> vắng / 
+                <span className="font-medium">{attendanceList.length}</span> tổng
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                {/* Reset Button */}
+                <button
+                  onClick={handleResetAttendance}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center space-x-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Reset lại</span>
+                </button>
+                
+                {/* Save Button */}
+                <button
+                  onClick={handleCompleteAttendance}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center space-x-2"
+                >
+                  <Save className="h-5 w-5" />
+                  <span>Lưu điểm danh</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 
+  // Toast Notification Component
+  const ToastNotification = () => {
+    if (!notification) return null;
+
+    const bgColor = notification.type === 'success' 
+      ? 'bg-green-500' 
+      : notification.type === 'error' 
+        ? 'bg-red-500' 
+        : 'bg-yellow-500';
+
+    const handleCancelAutoBack = () => {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        setCountdownTimer(null);
+      }
+      setAutoBackSeconds(0);
+      setNotification(null);
+    };
+
+    return (
+      <div className="fixed top-20 right-4 z-50">
+        <div className={`${bgColor} text-white px-6 py-4 rounded-lg shadow-lg space-y-3 min-w-96`}>
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0">
+              {notification.type === 'success' && <CheckCircle className="h-6 w-6" />}
+              {notification.type === 'error' && <X className="h-6 w-6" />}
+              {notification.type === 'warning' && <AlertTriangle className="h-6 w-6" />}
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">{notification.message}</p>
+            </div>
+            <button
+              onClick={handleCancelAutoBack}
+              className="flex-shrink-0 text-white hover:text-gray-200"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          {/* Countdown and cancel button */}
+          {autoBackSeconds > 0 && (
+            <div className="flex items-center justify-between bg-white bg-opacity-20 rounded px-3 py-2">
+              <span className="text-sm">
+                Tự động quay lại trong {autoBackSeconds} giây...
+              </span>
+              <button
+                onClick={handleCancelAutoBack}
+                className="text-sm bg-white bg-opacity-30 hover:bg-opacity-50 px-3 py-1 rounded transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="relative z-50">
       {currentView === 'sessions' && <SessionSelectionView />}
       {currentView === 'attendance' && <AttendanceFormView />}
+      <ToastNotification />
     </div>
   );
 }

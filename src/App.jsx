@@ -34,11 +34,13 @@ import TrainerSchedule from "./components/Trainer/TrainerSchedule";
 import ScheduleChangeRequests from "./components/Trainer/ScheduleChangeRequests";
 import TrainerClassDetail from "./components/Trainer/ClassDetail";
 import AttendanceFlow from "./components/Trainer/AttendanceFlow";
+import NotificationToast from "./components/Common/NotificationToast";
 
 import "./styles/vintage-global.css";
 import axios from "axios";
 import { setupAxiosInterceptors } from "./utils/authUtils";
 import { useAccountStatusCheck } from "./hooks/useAccountStatusCheck";
+import useNotifications from "./hooks/useNotifications";
 
 // Setup axios interceptors
 setupAxiosInterceptors(axios);
@@ -47,6 +49,9 @@ setupAxiosInterceptors(axios);
 function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Hook quản lý notifications
+  const { newNotifications, markAsRead, removeNewNotification } = useNotifications();
 
   // Hook để kiểm tra trạng thái tài khoản định kỳ
   useAccountStatusCheck(user);
@@ -55,14 +60,26 @@ function App({ appName }) {
     // Safely access localStorage
     try {
       const storedUser = localStorage.getItem("user");
-      if (storedUser) {
+      const storedToken = localStorage.getItem("token");
+      
+      console.log("App init - checking auth state:", { 
+        hasUser: !!storedUser, 
+        hasToken: !!storedToken 
+      });
+      
+      if (storedUser && storedToken) {
         const parsedUser = JSON.parse(storedUser);
         console.log("App loaded with user:", parsedUser);
         setUser(parsedUser);
+      } else if (storedUser && !storedToken) {
+        // User exists but no token, clear user data
+        console.log("User found but no token, clearing user data");
+        localStorage.removeItem("user");
       }
     } catch (error) {
       console.error("Error accessing localStorage:", error);
       localStorage.removeItem("user");
+      localStorage.removeItem("token");
     } finally {
       setLoading(false);
     }
@@ -153,6 +170,15 @@ function App({ appName }) {
             </Routes>
           </main>
           <Footer />
+          
+          {/* Global Notification Toast */}
+          {user && (
+            <NotificationToast
+              notifications={newNotifications}
+              onMarkAsRead={markAsRead}
+              onRemove={removeNewNotification}
+            />
+          )}
         </div>
       </Router>
     </div>

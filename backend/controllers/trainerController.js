@@ -3,6 +3,7 @@ import Class from "../models/Class.js";
 import User from "../models/User.js";
 import ClassEnrollment from "../models/ClassEnrollment.js";
 import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
+import NotificationService from "../services/NotificationService.js";
 import mongoose from "mongoose";
 
 // Lấy danh sách lớp học được gán cho trainer
@@ -489,6 +490,15 @@ export const createScheduleChangeRequest = async (req, res) => {
       { path: "class", select: "className serviceName" },
       { path: "trainer", select: "fullName email" }
     ]);
+
+    // Gửi thông báo cho admin
+    try {
+      const trainer = await User.findById(userId);
+      await NotificationService.notifyAdminNewScheduleRequest(scheduleChangeRequest, trainer);
+    } catch (notificationError) {
+      console.error("Error sending notification to admin:", notificationError);
+      // Không làm gián đoạn flow chính nếu thông báo lỗi
+    }
 
     res.status(201).json({
       success: true,

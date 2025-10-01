@@ -1,6 +1,7 @@
 import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
 import Class from "../models/Class.js";
 import User from "../models/User.js";
+import NotificationService from "../services/NotificationService.js";
 import mongoose from "mongoose";
 
 // Lấy tất cả yêu cầu thay đổi lịch cho admin
@@ -136,6 +137,19 @@ export const updateScheduleChangeRequestStatus = async (req, res) => {
       { path: "trainer", select: "fullName email" },
       { path: "approvedBy", select: "fullName" }
     ]);
+
+    // Gửi thông báo cho huấn luyện viên
+    try {
+      const admin = await User.findById(adminId);
+      if (action === "approve") {
+        await NotificationService.notifyTrainerScheduleApproved(updatedRequest, admin);
+      } else {
+        await NotificationService.notifyTrainerScheduleRejected(updatedRequest, admin);
+      }
+    } catch (notificationError) {
+      console.error("Error sending notification:", notificationError);
+      // Không làm gián đoạn flow chính nếu thông báo lỗi
+    }
 
     res.json({
       success: true,

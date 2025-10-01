@@ -15,6 +15,7 @@ import attendanceRoutes from "./routes/attendanceRoutes.js";
 import statsRoutes from "./routes/statsRoutes.js"; 
 import trainerRoutes from "./routes/trainerRoutes.js"; 
 import adminRoutes from "./routes/adminRoutes.js"; 
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 
 dotenv.config({ path: "./backend/.env" });
@@ -38,6 +39,7 @@ app.use("/api/clubs", clubRoutes);
 app.use("/api/stats", statsRoutes); 
 app.use("/api/trainers", trainerRoutes); 
 app.use("/api/admin", adminRoutes); 
+app.use("/api/notifications", notificationRoutes); 
 
 
 const PORT = process.env.PORT || 5000;
