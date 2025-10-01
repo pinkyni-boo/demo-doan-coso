@@ -10,14 +10,13 @@ export default function NavBar({ user, setUser }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [localUnreadCount, setLocalUnreadCount] = useState(3); // Local state for demo
+  const [unreadCount, setUnreadCount] = useState(0); // State để nhận từ NotificationCenter
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Hook quản lý notifications - fallback to local state if not working
+  // Hook quản lý notifications
   const { unreadCount: hookUnreadCount } = useNotifications();
-  const unreadCount = hookUnreadCount || localUnreadCount;
-
+  
   // Show notification button for all logged in users
   const showNotifications = !!user; // Show for all logged in users
   
@@ -250,6 +249,7 @@ export default function NavBar({ user, setUser }) {
                         isOpen={notificationOpen} 
                         onClose={() => setNotificationOpen(false)} 
                         userRole={user?.role || 'user'}
+                        onUnreadCountChange={setUnreadCount}
                       />
                     </div>
                   </div>

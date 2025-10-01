@@ -14,7 +14,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const NotificationCenter = ({ isOpen, onClose, userRole }) => {
+const NotificationCenter = ({ isOpen, onClose, userRole, onUnreadCountChange }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -58,8 +58,12 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
       const token = localStorage.getItem('token');
       
       if (!token) {
-        console.warn('No auth token found - showing demo data');
-        setDemoData();
+        console.warn('No auth token found');
+        setNotifications([]);
+        setUnreadCount(0);
+        if (onUnreadCountChange) {
+          onUnreadCountChange(0);
+        }
         return;
       }
 
@@ -68,136 +72,36 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (response.data.success && (response.data.notifications || []).length > 0) {
+      if (response.data.success) {
         const userNotifications = response.data.notifications || [];
         setNotifications(userNotifications);
         // Chỉ đếm thông báo chưa đọc của user hiện tại
         const userUnreadCount = userNotifications.filter(n => !n.isRead).length;
         setUnreadCount(userUnreadCount);
+        // Thông báo cho parent component
+        if (onUnreadCountChange) {
+          onUnreadCountChange(userUnreadCount);
+        }
       } else {
-        // If API returns success but no notifications, show demo data
-        console.log('API returned no notifications - showing demo data');
-        setDemoData();
+        // If API returns unsuccessful, set empty notifications
+        console.log('API returned unsuccessful response');
+        setNotifications([]);
+        setUnreadCount(0);
+        if (onUnreadCountChange) {
+          onUnreadCountChange(0);
+        }
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      console.log('API error - showing demo data');
-      setDemoData();
+      console.log('API error - setting empty notifications');
+      setNotifications([]);
+      setUnreadCount(0);
+      if (onUnreadCountChange) {
+        onUnreadCountChange(0);
+      }
     } finally {
       setLoading(false);
     }
-  };
-
-  const setDemoData = () => {
-    // Different demo data based on user role
-    let demoNotifications = [];
-
-    if (userRole === 'admin') {
-      demoNotifications = [
-        {
-          _id: 'admin_1',
-          title: 'Báo cáo doanh thu tháng',
-          message: 'Báo cáo doanh thu tháng 9 đã sẵn sàng để xem',
-          type: 'admin',
-          isRead: false,
-          createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-          navigationPath: '/admin/stats'
-        },
-        {
-          _id: 'admin_2',
-          title: 'Yêu cầu thay đổi lịch',
-          message: 'HLV Minh yêu cầu thay đổi lịch dạy',
-          type: 'schedule',
-          isRead: true,
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-          navigationPath: '/admin/schedule-requests'
-        },
-        {
-          _id: 'admin_3',
-          title: 'Thành viên mới đăng ký',
-          message: '5 thành viên mới đăng ký gói Premium',
-          type: 'membership',
-          isRead: false,
-          createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-          navigationPath: '/admin/users'
-        }
-      ];
-    } else if (userRole === 'trainer') {
-      demoNotifications = [
-        {
-          _id: 'trainer_1',
-          title: 'Yêu cầu thay đổi lịch được xác nhận',
-          message: 'Yêu cầu thay đổi lịch Yoga từ 10:00 sang 14:00 đã được admin xác nhận',
-          type: 'schedule',
-          isRead: false,
-          createdAt: new Date(Date.now() - 30 * 60 * 1000),
-          navigationPath: '/trainer/schedule-requests'
-        },
-        {
-          _id: 'trainer_2',
-          title: 'Học viên mới đăng ký',
-          message: '3 học viên mới đăng ký lớp Pilates của bạn',
-          type: 'attendance',
-          isRead: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          navigationPath: '/trainer/classes'
-        },
-        {
-          _id: 'trainer_3',
-          title: 'Đánh giá từ học viên',
-          message: 'Bạn nhận được đánh giá 5 sao từ học viên',
-          type: 'info',
-          isRead: true,
-          createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000),
-          navigationPath: '/trainer/reviews'
-        }
-      ];
-    } else {
-      // Regular user notifications
-      demoNotifications = [
-        {
-          _id: 'user_1',
-          title: 'Thông báo lịch học',
-          message: 'Lớp Yoga đã được chuyển từ 10:00 sang 14:00 hôm nay',
-          type: 'schedule',
-          isRead: false,
-          createdAt: new Date(Date.now() - 5 * 60 * 1000),
-          navigationPath: '/my-classes'
-        },
-        {
-          _id: 'user_2',
-          title: 'Thanh toán thành công',
-          message: 'Bạn đã thanh toán thành công gói tập 1 tháng',
-          type: 'payment',
-          isRead: true,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          navigationPath: '/payment'
-        },
-        {
-          _id: 'user_3',
-          title: 'Điểm danh thành công',
-          message: 'Bạn đã check-in thành công cho lớp Pilates lúc 8:00',
-          type: 'attendance',
-          isRead: false,
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          navigationPath: '/classes'
-        },
-        {
-          _id: 'user_4',
-          title: 'Thông báo hệ thống',
-          message: 'Gym sẽ đóng cửa sớm vào Chủ nhật tuần này do bảo trì',
-          type: 'info',
-          isRead: false,
-          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-          navigationPath: '/club'
-        }
-      ];
-    }
-
-    setNotifications(demoNotifications);
-    // Count only unread notifications
-    const unreadCount = demoNotifications.filter(n => !n.isRead).length;
-    setUnreadCount(unreadCount);
   };
 
   // Function to get navigation path based on notification type
@@ -207,10 +111,12 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
       return notification.navigationPath;
     }
 
-    // Otherwise, determine based on type
+    // Otherwise, determine based on type and user role
     switch (notification.type) {
       case 'schedule':
-        return '/trainer/schedule-requests';
+        if (userRole === 'admin') return '/admin/dashboard';
+        if (userRole === 'trainer') return '/trainer/schedule-requests';
+        return '/my-classes';
       case 'payment':
         return '/payment';
       case 'attendance':
@@ -251,7 +157,11 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
       );
       
       // Cập nhật unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      const newUnreadCount = Math.max(0, unreadCount - 1);
+      setUnreadCount(newUnreadCount);
+      if (onUnreadCountChange) {
+        onUnreadCountChange(newUnreadCount);
+      }
       
       const token = localStorage.getItem('token');
       
@@ -300,6 +210,9 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
         prev.map(notif => ({ ...notif, isRead: true, readAt: new Date() }))
       );
       setUnreadCount(0);
+      if (onUnreadCountChange) {
+        onUnreadCountChange(0);
+      }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -427,8 +340,7 @@ const NotificationCenter = ({ isOpen, onClose, userRole }) => {
                 <Bell className="h-6 w-6 text-gray-400" />
               </div>
               <h4 className="text-sm font-medium text-gray-900 mb-1">Không có thông báo</h4>
-              <p className="text-xs text-gray-500 mb-2">Bạn sẽ nhận được thông báo khi có hoạt động mới</p>
-              <p className="text-xs text-red-500">Debug: {JSON.stringify({ notificationsLength: (notifications || []).length, loading })}</p>
+              <p className="text-xs text-gray-500">Bạn sẽ nhận được thông báo khi có hoạt động mới</p>
             </div>
           </div>
         ) : (
