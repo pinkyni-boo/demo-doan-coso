@@ -123,18 +123,22 @@ export const verifyTrainer = (req, res, next) => {
 
 export const verifyAdminOrTrainer = (req, res, next) => {
   try {
+    console.log("=== VERIFY ADMIN OR TRAINER ===");
+    console.log("User role:", req.user?.role);
+
     if (!req.user) {
+      console.log("No user found in request");
       return res.status(401).json({ message: "Không có thông tin user" });
     }
 
     if (req.user.role !== "admin" && req.user.role !== "trainer") {
-      return res
-        .status(403)
-        .json({
-          message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
-        });
+      console.log("Access denied for role:", req.user.role);
+      return res.status(403).json({
+        message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
+      });
     }
 
+    console.log("Access granted for role:", req.user.role);
     next();
   } catch (error) {
     console.error("Admin/Trainer verification error:", error);

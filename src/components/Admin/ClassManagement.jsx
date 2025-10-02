@@ -24,6 +24,7 @@ export default function ClassManagement() {
   const [classes, setClasses] = useState([]);
   const [services, setServices] = useState([]);
   const [trainers, setTrainers] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -47,7 +48,9 @@ export default function ClassManagement() {
     startDate: "",
     endDate: "",
     schedule: [],
-    location: "Phòng tập chính",
+    roomId: "",
+    roomName: "",
+    location: "",
     requirements: "",
   });
 
@@ -69,23 +72,29 @@ export default function ClassManagement() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const [classesRes, servicesRes, trainersRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/classes"),
-        axios.get("http://localhost:5000/api/services"),
-        axios.get("http://localhost:5000/api/trainers", {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-      ]);
+      const [classesRes, servicesRes, trainersRes, roomsRes] =
+        await Promise.all([
+          axios.get("http://localhost:5000/api/classes"),
+          axios.get("http://localhost:5000/api/services"),
+          axios.get("http://localhost:5000/api/trainers", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("http://localhost:5000/api/rooms", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
       setClasses(classesRes.data || []);
       setServices(servicesRes.data || []);
       setTrainers(trainersRes.data || []);
+      setRooms(roomsRes.data.data || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       showNotification("❌ Không thể tải dữ liệu", "error");
       setClasses([]);
       setServices([]);
       setTrainers([]);
+      setRooms([]);
     } finally {
       setLoading(false);
     }
@@ -107,6 +116,8 @@ export default function ClassManagement() {
         maxMembers: parseInt(formData.maxMembers),
         totalSessions: parseInt(formData.totalSessions),
         price: parseInt(formData.price),
+        // Only include location as that's what the Class model expects
+        location: formData.location || formData.roomName,
       };
 
       if (editingClass) {
@@ -165,7 +176,9 @@ export default function ClassManagement() {
       startDate: "",
       endDate: "",
       schedule: [],
-      location: "Phòng tập chính",
+      roomId: "",
+      roomName: "",
+      location: "",
       requirements: "",
     });
     setEditingClass(null);
@@ -174,12 +187,26 @@ export default function ClassManagement() {
 
   const handleEdit = (classItem) => {
     // Tìm trainer ID từ instructorName nếu có
-    const trainer = trainers.find(t => t.fullName === classItem.instructorName);
-    
+    const trainer = trainers.find(
+      (t) => t.fullName === classItem.instructorName
+    );
+
+    // Tìm room ID từ location hoặc roomName nếu có
+    const room = rooms.find(
+      (r) =>
+        r.roomName === classItem.location ||
+        r.roomName === classItem.roomName ||
+        r._id === classItem.roomId
+    );
+
     setFormData({
       ...classItem,
       serviceId: classItem.service?._id || classItem.service || "", // Xử lý cả trường hợp populated và không populated
       instructorId: trainer?._id || "", // Lấy ID của trainer từ name
+      roomId: room?._id || classItem.roomId || "",
+      roomName:
+        room?.roomName || classItem.location || classItem.roomName || "",
+      location: classItem.location || room?.roomName || "", // Ensure location is set
       startDate: classItem.startDate
         ? new Date(classItem.startDate).toISOString().split("T")[0]
         : "",
@@ -218,13 +245,13 @@ export default function ClassManagement() {
     if (!formData.serviceId) {
       return trainers.filter((trainer) => trainer.status === "active");
     }
-    
+
     return trainers.filter((trainer) => {
       return (
         trainer.status === "active" &&
         trainer.specialty &&
-        (trainer.specialty._id === formData.serviceId || 
-         trainer.specialty === formData.serviceId) // Handle both populated and non-populated cases
+        (trainer.specialty._id === formData.serviceId ||
+          trainer.specialty === formData.serviceId) // Handle both populated and non-populated cases
       );
     });
   };
@@ -416,7 +443,7 @@ export default function ClassManagement() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-50"
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold">
@@ -482,7 +509,8 @@ export default function ClassManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Huấn luyện viên <span className="text-gray-500">(Tùy chọn)</span>
+                      Huấn luyện viên{" "}
+                      <span className="text-gray-500">(Tùy chọn)</span>
                     </label>
                     <select
                       value={formData.instructorId}
@@ -502,50 +530,61 @@ export default function ClassManagement() {
                       disabled={!formData.serviceId}
                     >
                       <option value="">
-                        {!formData.serviceId 
-                          ? "-- Vui lòng chọn dịch vụ trước --" 
+                        {!formData.serviceId
+                          ? "-- Vui lòng chọn dịch vụ trước --"
                           : "-- Chọn huấn luyện viên (Tùy chọn) --"}
                       </option>
-                      
+
                       {/* Hiển thị huấn luyện viên phù hợp */}
-                      {formData.serviceId && getFilteredTrainers().length > 0 && (
-                        <>
-                          <optgroup label="🎯 Phù hợp với dịch vụ">
-                            {getFilteredTrainers().map((trainer) => (
+                      {formData.serviceId &&
+                        getFilteredTrainers().length > 0 && (
+                          <>
+                            <optgroup label="🎯 Phù hợp với dịch vụ">
+                              {getFilteredTrainers().map((trainer) => (
+                                <option key={trainer._id} value={trainer._id}>
+                                  ✓ {trainer.fullName} - {trainer.experience}{" "}
+                                  năm kinh nghiệm
+                                </option>
+                              ))}
+                            </optgroup>
+                          </>
+                        )}
+
+                      {/* Hiển thị tất cả huấn luyện viên khác nếu không có ai phù hợp */}
+                      {formData.serviceId &&
+                        getFilteredTrainers().length === 0 && (
+                          <>
+                            <option
+                              value=""
+                              disabled
+                              style={{ color: "#f59e0b", fontStyle: "italic" }}
+                            >
+                              ⚠️ Không có HLV phù hợp - Hiển thị tất cả HLV
+                              khác:
+                            </option>
+                            {getAllActiveTrainers().map((trainer) => (
                               <option key={trainer._id} value={trainer._id}>
-                                ✓ {trainer.fullName} - {trainer.experience} năm kinh nghiệm
+                                ⚡ {trainer.fullName} - {trainer.experience} năm
+                                kinh nghiệm (Khác chuyên môn)
                               </option>
                             ))}
-                          </optgroup>
-                        </>
-                      )}
-                      
-                      {/* Hiển thị tất cả huấn luyện viên khác nếu không có ai phù hợp */}
-                      {formData.serviceId && getFilteredTrainers().length === 0 && (
-                        <>
-                          <option value="" disabled style={{color: '#f59e0b', fontStyle: 'italic'}}>
-                            ⚠️ Không có HLV phù hợp - Hiển thị tất cả HLV khác:
-                          </option>
-                          {getAllActiveTrainers().map((trainer) => (
-                            <option key={trainer._id} value={trainer._id}>
-                              ⚡ {trainer.fullName} - {trainer.experience} năm kinh nghiệm (Khác chuyên môn)
-                            </option>
-                          ))}
-                        </>
-                      )}
+                          </>
+                        )}
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
                       {formData.serviceId ? (
                         getFilteredTrainers().length > 0 ? (
                           <>
                             <span className="text-green-600 font-medium">
-                              ✓ {getFilteredTrainers().length} huấn luyện viên có chuyên môn phù hợp
+                              ✓ {getFilteredTrainers().length} huấn luyện viên
+                              có chuyên môn phù hợp
                             </span>
                           </>
                         ) : (
                           <>
                             <span className="text-orange-600 font-medium">
-                              ⚠️ Không có HLV phù hợp - Hiển thị {getAllActiveTrainers().length} HLV khác
+                              ⚠️ Không có HLV phù hợp - Hiển thị{" "}
+                              {getAllActiveTrainers().length} HLV khác
                             </span>
                           </>
                         )
@@ -659,16 +698,31 @@ export default function ClassManagement() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Địa điểm
+                    Phòng tập
                   </label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <select
+                    value={formData.roomId}
+                    onChange={(e) => {
+                      const selectedRoom = rooms.find(
+                        (room) => room._id === e.target.value
+                      );
+                      setFormData({
+                        ...formData,
+                        roomId: e.target.value,
+                        roomName: selectedRoom ? selectedRoom.roomName : "",
+                        location: selectedRoom ? selectedRoom.roomName : "", // This is what gets saved to the database
+                      });
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Chọn phòng tập</option>
+                    {rooms.map((room) => (
+                      <option key={room._id} value={room._id}>
+                        {room.roomCode} - {room.roomName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Schedule Section */}
@@ -816,7 +870,11 @@ export default function ClassManagement() {
                 </div>
                 <div className="flex items-center">
                   <MapPin size={16} className="mr-2 text-gray-400" />
-                  <span>{classItem.location || "Phòng tập chính"}</span>
+                  <span>
+                    {classItem.roomName ||
+                      classItem.location ||
+                      "Chưa chọn phòng"}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <Clock size={16} className="mr-2 text-gray-400" />
@@ -891,7 +949,7 @@ export default function ClassManagement() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+              className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-50"
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold">Danh sách học viên</h2>

@@ -577,7 +577,7 @@ export default function PaymentManagement() {
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-50">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>

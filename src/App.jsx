@@ -35,6 +35,7 @@ import TrainerSchedule from "./components/Trainer/TrainerSchedule";
 import ScheduleChangeRequests from "./components/Trainer/ScheduleChangeRequests";
 import TrainerClassDetail from "./components/Trainer/ClassDetail";
 import AttendanceFlow from "./components/Trainer/AttendanceFlow";
+import TrainerIssueReport from "./components/Trainer/TrainerIssueReport";
 import NotificationToast from "./components/Common/NotificationToast";
 
 import "./styles/vintage-global.css";
@@ -50,9 +51,10 @@ setupAxiosInterceptors(axios);
 function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Hook quản lý notifications
-  const { newNotifications, markAsRead, removeNewNotification } = useNotifications();
+  const { newNotifications, markAsRead, removeNewNotification } =
+    useNotifications();
 
   // Hook để kiểm tra trạng thái tài khoản định kỳ
   useAccountStatusCheck(user);
@@ -62,12 +64,12 @@ function App({ appName }) {
     try {
       const storedUser = localStorage.getItem("user");
       const storedToken = localStorage.getItem("token");
-      
-      console.log("App init - checking auth state:", { 
-        hasUser: !!storedUser, 
-        hasToken: !!storedToken 
+
+      console.log("App init - checking auth state:", {
+        hasUser: !!storedUser,
+        hasToken: !!storedToken,
       });
-      
+
       if (storedUser && storedToken) {
         const parsedUser = JSON.parse(storedUser);
         console.log("App loaded with user:", parsedUser);
@@ -120,7 +122,7 @@ function App({ appName }) {
               <Route path="/classes" element={<ViewClasses />} />
               <Route path="/my-classes" element={<UserClasses />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
-              
+
               {/* Feedback routes */}
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/feedback/club/:clubId" element={<FeedbackPage />} />
@@ -129,9 +131,22 @@ function App({ appName }) {
               <Route path="/trainer/dashboard" element={<TrainerDashboard />} />
               <Route path="/trainer/classes" element={<TrainerClasses />} />
               <Route path="/trainer/schedule" element={<TrainerSchedule />} />
-              <Route path="/trainer/schedule-requests" element={<ScheduleChangeRequests />} />
-              <Route path="/trainer/class/:classId" element={<TrainerClassDetail />} />
-              <Route path="/trainer/attendance/:classId" element={<AttendanceFlow />} />
+              <Route
+                path="/trainer/schedule-requests"
+                element={<ScheduleChangeRequests />}
+              />
+              <Route
+                path="/trainer/class/:classId"
+                element={<TrainerClassDetail />}
+              />
+              <Route
+                path="/trainer/attendance/:classId"
+                element={<AttendanceFlow />}
+              />
+              <Route
+                path="/trainer/issue-report"
+                element={<TrainerIssueReport />}
+              />
 
               {/* Admin routes - tất cả qua dashboard */}
               <Route
@@ -149,8 +164,12 @@ function App({ appName }) {
                       <Route path="clubs" element={<AdminDashboard />} />
                       <Route path="images" element={<AdminDashboard />} />
                       <Route path="stats" element={<AdminDashboard />} />
+                      <Route path="equipment" element={<AdminDashboard />} />
                       <Route path="trainers" element={<TrainerManagement />} />
-                      <Route path="schedule-requests" element={<AdminScheduleRequests />} />
+                      <Route
+                        path="schedule-requests"
+                        element={<AdminScheduleRequests />}
+                      />
                       <Route
                         path=""
                         element={<Navigate to="dashboard" replace />}
@@ -175,7 +194,7 @@ function App({ appName }) {
             </Routes>
           </main>
           <Footer />
-          
+
           {/* Global Notification Toast */}
           {user && (
             <NotificationToast
