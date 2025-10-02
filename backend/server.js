@@ -8,14 +8,20 @@ import serviceRoutes from "./routes/serviceRoutes.js";
 import clubRoutes from "./routes/clubRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
-import membershipRoutes from "./routes/membershipRoutes.js"; 
+import membershipRoutes from "./routes/membershipRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
-import statsRoutes from "./routes/statsRoutes.js"; 
+import statsRoutes from "./routes/statsRoutes.js";
 import feedbackRoutes from "./routes/feedbackRoutes.js";
-import trainerRoutes from "./routes/trainerRoutes.js"; 
-import adminRoutes from "./routes/adminRoutes.js"; 
+import trainerRoutes from "./routes/trainerRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import debugRoutes from "./routes/debugRoutes.js";
+// Asset Management Routes
+import roomRoutes from "./routes/roomRoutes.js";
+import equipmentRoutes from "./routes/equipmentRoutes.js";
+import issueReportRoutes from "./routes/issueReportRoutes.js";
+import maintenanceRoutes from "./routes/maintenanceRoutes.js";
 
 dotenv.config({ path: "./backend/.env" });
 
@@ -25,6 +31,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files for uploaded images
+app.use("/uploads", express.static("uploads"));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/services", serviceRoutes);
@@ -33,11 +42,17 @@ app.use("/api/memberships", membershipRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/clubs", clubRoutes);
-app.use("/api/stats", statsRoutes); 
+app.use("/api/stats", statsRoutes);
 app.use("/api/feedback", feedbackRoutes);
-app.use("/api/trainers", trainerRoutes); 
-app.use("/api/admin", adminRoutes); 
-app.use("/api/notifications", notificationRoutes); 
+app.use("/api/trainers", trainerRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/debug", debugRoutes);
+// Asset Management Routes
+app.use("/api/rooms", roomRoutes);
+app.use("/api/equipment", equipmentRoutes);
+app.use("/api/issue-reports", issueReportRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;

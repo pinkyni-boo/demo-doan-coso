@@ -23,6 +23,11 @@ const feedbackSchema = new mongoose.Schema(
       ref: "Service",
       required: false,
     },
+    trainer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
     // Loại feedback
     feedbackType: {
       type: String,

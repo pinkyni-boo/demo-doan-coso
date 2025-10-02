@@ -438,3 +438,30 @@ export const createUserByAdmin = async (req, res) => {
     res.status(500).json({ message: "Lỗi server khi tạo người dùng" });
   }
 };
+
+// Lấy danh sách các trainers
+export const getTrainers = async (req, res) => {
+  try {
+    console.log("=== GET TRAINERS API CALLED ===");
+    console.log("User making request:", req.user?._id);
+
+    const trainers = await User.find({ role: "trainer" })
+      .select("_id username fullName email avatar")
+      .sort({ fullName: 1 });
+
+    console.log("Trainers found in database:", trainers.length);
+    console.log("Trainers data:", trainers);
+
+    res.json({
+      success: true,
+      data: trainers,
+      message: "Lấy danh sách huấn luyện viên thành công",
+    });
+  } catch (error) {
+    console.error("Error fetching trainers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách huấn luyện viên",
+    });
+  }
+};

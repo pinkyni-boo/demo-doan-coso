@@ -7,7 +7,7 @@ import {
   Dumbbell,
   Building,
   TrendingUp,
-  ClipboardList
+  ClipboardList,
 } from "lucide-react";
 import AdminNav from "../AdminNav";
 import PaymentManagement from "../PaymentManagement";
@@ -21,6 +21,9 @@ import UserManagement from "../UserManagement";
 import FeedbackManagement from "../FeedbackManagement";
 import TrainerManagement from "../qlhlv";
 import AdminScheduleRequests from "../AdminScheduleRequests";
+import AdminAssetManagement from "../AssetManagement";
+import RoomManagement from "../AssetManagement/RoomManagement";
+import EquipmentManagement from "../EquipmentManagement";
 
 // Simple ImageManager placeholder component
 const ImageManager = () => {
@@ -36,8 +39,18 @@ const ImageManager = () => {
       </div>
       <div className="bg-white rounded-lg shadow-md p-12 text-center">
         <div className="text-gray-400 mb-4">
-          <svg className="h-24 w-24 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <svg
+            className="h-24 w-24 mx-auto"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
           </svg>
         </div>
         <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -81,6 +94,13 @@ const AdminDashboard = () => {
         return <TrainerManagement />;
       case "schedule-requests":
         return <AdminScheduleRequests />;
+      case "assets":
+      case "maintenance":
+        return <AdminAssetManagement />;
+      case "rooms":
+        return <RoomManagement />;
+      case "equipment":
+        return <EquipmentManagement />;
       case "dashboard":
       default:
         return <DashboardHome setActiveModule={setActiveModule} />;
@@ -92,7 +112,7 @@ const AdminDashboard = () => {
       <AdminNav activeModule={activeModule} setActiveModule={setActiveModule} />
 
       {/* Main content area với padding phù hợp */}
-      <main className="ml-64 pt-20 min-h-screen">
+      <main className="ml-64 pt-20 min-h-screen max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-50">
         <div className="p-6">
           <div className="max-w-7xl mx-auto">{renderContent()}</div>
         </div>
@@ -143,7 +163,7 @@ const DashboardHome = ({ setActiveModule }) => {
         </div>
       </div>
     );
-  };
+  }
 
   return (
     <div className="space-y-8">

@@ -334,7 +334,7 @@ const UserManagement = () => {
 
       {/* User Table */}
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-50">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -393,17 +393,25 @@ const UserManagement = () => {
                       >
                         {getRoleIcon(user.role)}
                         <span className="ml-1">
-                          {user.role === "admin" 
-                            ? "Admin" 
-                            : user.role === "trainer" 
-                            ? "Huấn luyện viên" 
+                          {user.role === "admin"
+                            ? "Admin"
+                            : user.role === "trainer"
+                            ? "Huấn luyện viên"
                             : "Người dùng"}
                         </span>
                       </span>
                       {user.isAccountLocked && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                          <svg
+                            className="w-3 h-3 mr-1"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                              clipRule="evenodd"
+                            />
                           </svg>
                           Tài khoản đã bị khóa
                         </span>
@@ -570,8 +578,16 @@ const UserManagement = () => {
                 {modalType === "view" && formData.isAccountLocked && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <div className="flex items-center text-red-800">
-                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                      <svg
+                        className="w-5 h-5 mr-2"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       <span className="font-medium">Tài khoản đã bị khóa</span>
                     </div>
@@ -582,7 +598,10 @@ const UserManagement = () => {
                     )}
                     {formData.lockUntil && (
                       <p className="text-sm text-red-600 mt-1">
-                        Khóa đến: {new Date(formData.lockUntil).toLocaleDateString("vi-VN")}
+                        Khóa đến:{" "}
+                        {new Date(formData.lockUntil).toLocaleDateString(
+                          "vi-VN"
+                        )}
                       </p>
                     )}
                   </div>

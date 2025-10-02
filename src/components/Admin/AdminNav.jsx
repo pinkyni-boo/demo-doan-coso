@@ -10,20 +10,13 @@ import {
   Dumbbell,
   ClipboardList,
   Crown,
-  LogOut,
   MessageSquare,
+  Settings,
+  Wrench,
+  MapPin,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const AdminNav = ({ activeModule, setActiveModule }) => {
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/");
-  };
-
   const navItems = [
     {
       id: "dashboard",
@@ -80,6 +73,30 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
       description: "Xử lý yêu cầu thay đổi lịch",
     },
     {
+      id: "assets",
+      label: "Quản lý tài sản",
+      icon: <Settings size={20} />,
+      description: "Quản lý phòng tập & thiết bị",
+    },
+    {
+      id: "rooms",
+      label: "Phòng tập",
+      icon: <MapPin size={20} />,
+      description: "Quản lý phòng tập",
+    },
+    {
+      id: "equipment",
+      label: "Thiết bị",
+      icon: <Dumbbell size={20} />,
+      description: "Quản lý thiết bị gym",
+    },
+    {
+      id: "maintenance",
+      label: "Bảo trì",
+      icon: <Wrench size={20} />,
+      description: "Lịch bảo trì & sửa chữa",
+    },
+    {
       id: "stats",
       label: "Thống kê",
       icon: <BarChart size={20} />,
@@ -94,7 +111,7 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
   ];
 
   return (
-    <aside className="bg-gradient-to-b from-stone-800 via-stone-900 to-amber-900 text-white w-64 min-h-screen fixed left-0 top-0 pt-20 overflow-y-auto z-30 shadow-2xl border-r border-amber-700/30 mt-4">
+    <aside className="bg-gradient-to-b from-stone-800 via-stone-900 to-amber-900 text-white w-64 h-screen fixed left-0 top-0 pt-20 overflow-y-auto z-30 shadow-2xl border-r border-amber-700/30 mt-4 scrollbar-thin scrollbar-thumb-amber-600 scrollbar-track-stone-800">
       {/* Header with vintage styling */}
       <div className="px-6 py-4 bg-gradient-to-r from-amber-600/20 to-yellow-600/20 border-b border-amber-700/30">
         <div className="flex items-center space-x-3">
@@ -165,29 +182,6 @@ const AdminNav = ({ activeModule, setActiveModule }) => {
           ))}
         </div>
       </nav>
-
-      {/* Bottom section with logout */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-stone-900 to-transparent border-t border-amber-700/30">
-        <button
-          onClick={handleLogout}
-          className="group flex w-full items-center px-4 py-3 text-stone-300 hover:text-white hover:bg-red-600/20 rounded-xl transition-all duration-300"
-        >
-          <LogOut className="h-5 w-5 mr-3 group-hover:scale-110 transition-transform" />
-          <div className="text-left">
-            <div className="text-sm font-medium vintage-sans">Đăng xuất</div>
-            <div className="text-xs text-stone-400 vintage-serif">
-              Thoát khỏi admin
-            </div>
-          </div>
-        </button>
-
-        {/* Version info */}
-        <div className="mt-4 pt-4 border-t border-stone-700/50 text-center">
-          <p className="text-xs text-stone-500 vintage-serif">
-            Royal Fitness v1.0
-          </p>
-        </div>
-      </div>
     </aside>
   );
 };

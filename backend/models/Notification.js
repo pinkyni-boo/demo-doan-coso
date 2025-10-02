@@ -5,26 +5,40 @@ const notificationSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      maxlength: 200
+      maxlength: 200,
     },
     message: {
       type: String,
       required: true,
-      maxlength: 500
+      maxlength: 500,
     },
     type: {
       type: String,
-      enum: ["schedule", "payment", "attendance", "general"],
-      default: "general"
+      enum: [
+        "schedule",
+        "payment",
+        "attendance",
+        "general",
+        "issue_reported",
+        "issue_acknowledged",
+        "issue_resolved",
+        "maintenance_scheduled",
+        "maintenance_assigned",
+        "maintenance_completed",
+        "maintenance",
+        "equipment",
+        "room",
+      ],
+      default: "general",
     },
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
     sender: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
     },
     relatedId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,14 +46,14 @@ const notificationSchema = new mongoose.Schema(
     },
     isRead: {
       type: Boolean,
-      default: false
+      default: false,
     },
     readAt: {
-      type: Date
-    }
+      type: Date,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
