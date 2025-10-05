@@ -565,6 +565,16 @@ export default function HomePage() {
               </motion.div>
             ))}
           </VintageGrid>
+
+          <div className="text-center mt-12">
+            <Link to="/feedback">
+              <VintageButton variant="primary" size="lg" className="group">
+                <Star className="h-5 w-5 flex-shrink-0" />
+                <span>Xem tất cả đánh giá</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </VintageButton>
+            </Link>
+          </div>
         </VintageContainer>
       </VintageSection>
     </div>
@@ -658,7 +668,7 @@ function TestimonialCard({ name, role, content, rating, image }) {
     <VintageCard className="p-6 h-full luxury">
       <div className="flex mb-4">
         {[...Array(rating)].map((_, i) => (
-          <Star key={`star-${i}`} className="h-5 w-5 text-vintage-gold fill-current" />
+          <Star key={`star-${name}-${i}`} className="h-5 w-5 text-vintage-gold fill-current" />
         ))}
       </div>
 
