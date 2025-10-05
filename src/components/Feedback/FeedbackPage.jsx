@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   Star,
@@ -16,6 +16,7 @@ import FeedbackForm from "./FeedbackForm";
 const FeedbackPage = () => {
   const { clubId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [feedbacks, setFeedbacks] = useState([]);
   const [stats, setStats] = useState({});
@@ -37,6 +38,18 @@ const FeedbackPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [user, setUser] = useState(null);
+  const [showMyFeedback, setShowMyFeedback] = useState(false);
+
+  // Handle navigation state to automatically switch to "My Feedback"
+  useEffect(() => {
+    if (location.state?.showMyFeedback) {
+      setShowMyFeedback(true);
+      // Show a message indicating this is the user's feedback
+      if (location.state?.className) {
+        toast.info(`📝 Hiển thị đánh giá của bạn cho lớp "${location.state.className}"`);
+      }
+    }
+  }, [location.state]);
 
   // Debounce search term với delay ngắn hơn
   useEffect(() => {
@@ -47,8 +60,12 @@ const FeedbackPage = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Thêm debug vào FeedbackPage.jsx
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user") || "{}");
+    console.log("🔍 Current user from localStorage:", userData);
+    console.log("🔍 User role:", userData.role);
+    console.log("🔍 User ID:", userData._id);
     setUser(userData);
   }, []);
 
@@ -56,37 +73,87 @@ const FeedbackPage = () => {
     try {
       setLoading(true);
 
-      // Build query params
-      const queryParams = new URLSearchParams({
-        page: pagination.currentPage.toString(),
-        limit: "10",
-        ...(filters.rating && { rating: filters.rating }),
-        ...(filters.type && { type: filters.type }),
-        ...(filters.feedbackType && { feedbackType: filters.feedbackType }),
-        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
-        sortBy: filters.sortBy,
-        order: filters.order,
-      });
-
-      // Call real API to get feedbacks
-      const response = await axios.get(
-        `http://localhost:5000/api/feedback?${queryParams.toString()}`
-      );
-
-      console.log("Feedback API response:", response.data);
-
-      if (response.data.success) {
-        console.log("Setting feedbacks:", response.data.data);
-        setFeedbacks(response.data.data || []);
-        if (response.data.pagination) {
-          setPagination({
-            currentPage: response.data.pagination.currentPage,
-            totalPages: response.data.pagination.totalPages,
-            totalItems: response.data.pagination.totalItems,
+      // Determine API endpoint based on showMyFeedback
+      let apiUrl;
+      const token = localStorage.getItem("token");
+      
+      if (showMyFeedback && token) {
+        // Fetch user's own feedbacks (including pending ones)
+        apiUrl = `http://localhost:5000/api/feedback/my-feedbacks`;
+        
+        console.log("🔍 DEBUG REQUEST INFO:");
+        console.log("- Current user ID from state:", user?._id);
+        console.log("- User role:", user?.role);
+        console.log("- User name:", user?.fullName);
+        console.log("- Token exists:", !!token);
+        console.log("- API URL:", apiUrl);
+        
+        const response = await axios.get(apiUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        console.log("🔍 BACKEND RESPONSE:");
+        console.log("- Response status:", response.status);
+        console.log("- Response data:", response.data);
+        
+        if (response.data.feedbacks) {
+          console.log("🔍 FEEDBACKS ANALYSIS:");
+          response.data.feedbacks.forEach((feedback, index) => {
+            console.log(`Feedback ${index + 1}:`, {
+              feedbackId: feedback._id,
+              feedbackUserId: feedback.user,
+              feedbackUserType: typeof feedback.user,
+              feedbackTitle: feedback.title,
+              feedbackClass: feedback.class?.className || 'No class',
+              feedbackStatus: feedback.status,
+              isCurrentUser: feedback.user === user?._id,
+              currentUserId: user?._id
+            });
           });
         }
+        
+        if (response.data.feedbacks) {
+          setFeedbacks(response.data.feedbacks || []);
+          if (response.data.pagination) {
+            setPagination({
+              currentPage: response.data.pagination.currentPage,
+              totalPages: response.data.pagination.totalPages,
+              totalItems: response.data.pagination.totalItems,
+            });
+          }
+        }
       } else {
-        throw new Error(response.data.message);
+        // Fetch public feedbacks (approved only)
+        const queryParams = new URLSearchParams({
+          page: pagination.currentPage.toString(),
+          limit: "10",
+          ...(filters.rating && { rating: filters.rating }),
+          ...(filters.type && { type: filters.type }),
+          ...(filters.feedbackType && { feedbackType: filters.feedbackType }),
+          ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+          sortBy: filters.sortBy,
+          order: filters.order,
+        });
+
+        apiUrl = `http://localhost:5000/api/feedback?${queryParams.toString()}`;
+        
+        const response = await axios.get(apiUrl);
+        
+        console.log("Feedback API response:", response.data);
+
+        if (response.data.success) {
+          console.log("Setting feedbacks:", response.data.data);
+          setFeedbacks(response.data.data || []);
+          if (response.data.pagination) {
+            setPagination({
+              currentPage: response.data.pagination.currentPage,
+              totalPages: response.data.pagination.totalPages,
+              totalItems: response.data.pagination.totalItems,
+            });
+          }
+        } else {
+          throw new Error(response.data.message);
+        }
       }
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
@@ -111,6 +178,7 @@ const FeedbackPage = () => {
     filters.sortBy,
     filters.order,
     debouncedSearchTerm,
+    showMyFeedback, // Add showMyFeedback to dependencies
   ]);
 
   const fetchClubStats = useCallback(async () => {
@@ -247,6 +315,26 @@ const FeedbackPage = () => {
     }));
   }, []);
 
+  const handleToggleMyFeedback = useCallback((showMy) => {
+    setShowMyFeedback(showMy);
+    // Reset pagination when switching views
+    setPagination(prev => ({
+      ...prev,
+      currentPage: 1
+    }));
+    // Reset filters when switching to my feedback
+    if (showMy) {
+      setFilters({
+        rating: "",
+        type: "",
+        feedbackType: "",
+        sortBy: "createdAt",
+        order: "desc",
+      });
+      setSearchTerm("");
+    }
+  }, []);
+
   const renderStars = useCallback((rating) => {
     return Array.from({ length: 5 }, (_, index) => (
       <Star
@@ -330,6 +418,27 @@ const FeedbackPage = () => {
                 <span className="text-sm font-semibold text-stone-700">
                   {feedback.overallRating}/5
                 </span>
+                {/* Status indicator for my feedback */}
+                {showMyFeedback && (
+                  <span className={`ml-2 px-2 py-1 text-xs rounded-full font-medium ${
+                    feedback.status === 'approved' 
+                      ? 'bg-green-100 text-green-700'
+                      : feedback.status === 'pending'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : feedback.status === 'rejected'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    {feedback.status === 'approved' 
+                      ? '✓ Đã duyệt'
+                      : feedback.status === 'pending'
+                      ? '⏳ Chờ duyệt'
+                      : feedback.status === 'rejected'
+                      ? '✗ Từ chối'
+                      : 'Không xác định'
+                    }
+                  </span>
+                )}
               </div>
             </div>
 
@@ -341,6 +450,8 @@ const FeedbackPage = () => {
               <p className="text-stone-600 leading-relaxed">
                 {feedback.content}
               </p>
+
+             
 
               {/* Show trainer info for trainer feedback */}
               {feedback.feedbackType === "trainer" && feedback.trainer && (
@@ -414,7 +525,7 @@ const FeedbackPage = () => {
             )}
           </motion.div>
         ),
-    [formatDate, renderStars]
+    [formatDate, renderStars, showMyFeedback]
   );
 
   return (
@@ -428,10 +539,13 @@ const FeedbackPage = () => {
             className="mb-6"
           >
             <h1 className="text-4xl font-bold text-stone-800 mb-4">
-              Đánh giá từ thành viên
+              {showMyFeedback ? "Đánh giá của tôi" : "Đánh giá từ thành viên"}
             </h1>
             <p className="text-xl text-stone-600 max-w-3xl mx-auto">
-              Chia sẻ trải nghiệm và đọc phản hồi từ cộng đồng Royal Fitness
+              {showMyFeedback 
+                ? "Xem tất cả đánh giá bạn đã gửi. Đánh giá 'Chờ duyệt' sẽ hiển thị sau khi admin xác nhận."
+                : "Chia sẻ trải nghiệm và đọc phản hồi từ cộng đồng Royal Fitness"
+              }
             </p>
           </motion.div>
 
@@ -482,19 +596,7 @@ const FeedbackPage = () => {
         {/* Action Bar */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-8">
           <div className="flex flex-col sm:flex-row gap-4 flex-1">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 h-5 w-5" />
-              <input
-                id="feedback-search"
-                name="search"
-                type="text"
-                placeholder="Tìm kiếm đánh giá..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-10 pr-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent min-w-[300px]"
-              />
-            </div>
+            
 
             {/* Filters */}
             <div className="flex gap-3">
@@ -505,7 +607,7 @@ const FeedbackPage = () => {
                 onChange={(e) => handleFilterChange("rating", e.target.value)}
                 className="px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500"
               >
-                <option value="">Tất cả đánh giá</option>
+                <option value="">Lọc đánh giá</option>
                 <option value="5">5 sao</option>
                 <option value="4">4 sao trở lên</option>
                 <option value="3">3 sao trở lên</option>
@@ -513,49 +615,10 @@ const FeedbackPage = () => {
                 <option value="1">1 sao trở lên</option>
               </select>
 
-              <select
-                id="type-filter"
-                name="typeFilter"
-                value={filters.type}
-                onChange={(e) => handleFilterChange("type", e.target.value)}
-                className="px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-              >
-                <option value="">Tất cả loại</option>
-                <option value="general">Đánh giá chung</option>
-                <option value="class">Về lớp học</option>
-                <option value="service">Về dịch vụ</option>
-                <option value="complaint">Khiếu nại</option>
-                <option value="suggestion">Đề xuất</option>
-              </select>
-
-              <select
-                id="feedbackType-filter"
-                name="feedbackTypeFilter"
-                value={filters.feedbackType}
-                onChange={(e) =>
-                  handleFilterChange("feedbackType", e.target.value)
-                }
-                className="px-4 py-3 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-500"
-              >
-                <option value="">Tất cả đánh giá</option>
-                <option value="general">Đánh giá chung</option>
-                <option value="class">Về lớp học</option>
-                <option value="service">Về dịch vụ</option>
-                <option value="facility">Về cơ sở</option>
-                <option value="trainer">Về huấn luyện viên</option>
-              </select>
             </div>
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleCreateFeedback}
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all shadow-lg"
-          >
-            <Plus className="h-5 w-5" />
-            Viết đánh giá
-          </motion.button>
+          
         </div>
 
         {/* Overall Stats Summary */}
@@ -673,19 +736,10 @@ const FeedbackPage = () => {
               >
                 <MessageSquare className="h-16 w-16 text-stone-400 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-stone-700 mb-2">
-                  Chưa có đánh giá nào
+                  {showMyFeedback ? "Bạn chưa có đánh giá nào" : "Chưa có đánh giá nào"}
                 </h3>
-                <p className="text-stone-500 mb-6">
-                  Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!
-                </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCreateFeedback}
-                  className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all"
-                >
-                  Viết đánh giá đầu tiên
-                </motion.button>
+                
+                
               </motion.div>
             )}
           </AnimatePresence>

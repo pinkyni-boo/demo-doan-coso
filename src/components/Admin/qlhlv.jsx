@@ -133,7 +133,7 @@ export default function TrainerManagement() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
-        // Hiển thị thông báo cập nhật thành công
+       
         if (response.data.message) {
           alert(response.data.message);
         } else if (response.data.warning) {
@@ -214,46 +214,14 @@ export default function TrainerManagement() {
             </tr>
           </thead>
           <tbody>
-            {trainers.map((t) => (
-              <tr key={t._id}>
-                <td className="border px-4 py-2">{t.fullName}</td>
-                <td className="border px-4 py-2">{t.email}</td>
-                <td className="border px-4 py-2">{t.phone}</td>
-                <td className="border px-4 py-2">
-                  {genders.find((g) => g.value === t.gender)?.label}
-                </td>
-                <td className="border px-4 py-2">
-                  <div className="flex flex-col">
-                    <span>{statuses.find((s) => s.value === t.status)?.label}</span>
-                    {t.userId?.isAccountLocked && (
-                      <span className="text-red-600 text-xs mt-1 bg-red-100 px-2 py-1 rounded">
-                        🔒 Tài khoản đã bị khóa
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="border px-4 py-2">
-                  {typeof t.specialty === "object"
-                    ? t.specialty.name
-                    : services.find((sv) => sv._id === t.specialty)?.name}
-                </td>
-                <td className="border px-4 py-2">{t.experience} năm</td>
-                <td className="border px-4 py-2">
-                  <button
-                    onClick={() => openModal("edit", t)}
-                    className="text-blue-600 mr-2"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange(t, "terminated")}
-                    className="text-red-600"
-                  >
-                    Nghỉ việc
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {trainers.map((trainer, idx) =>
+              trainer && trainer.name ? (
+                <div key={trainer._id || idx}>
+                  {/* ...hiển thị trainer... */}
+                  {trainer.name}
+                </div>
+              ) : null
+            )}
           </tbody>
         </table>
         {/* Popup chuyển trạng thái */}
