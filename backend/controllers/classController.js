@@ -172,8 +172,11 @@ export const deleteClass = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Kiểm tra xem có học viên đã đăng ký chưa
-    const enrollmentCount = await ClassEnrollment.countDocuments({ class: id });
+    // Kiểm tra xem có học viên đã đăng ký và đang active chưa
+    const enrollmentCount = await ClassEnrollment.countDocuments({
+      class: id,
+      status: { $ne: "cancelled" }, // Chỉ đếm enrollment chưa bị hủy
+    });
     if (enrollmentCount > 0) {
       await session.abortTransaction();
       session.endSession();
@@ -404,18 +407,87 @@ export const getClassMembers = async (req, res) => {
   }
 };
 
+<<<<<<< Updated upstream
+=======
+// Cập nhật trạng thái thanh toán của enrollment
+export const updateEnrollmentPayment = async (req, res) => {
+  try {
+    const { classId, userId, paymentStatus } = req.body;
+
+    console.log("Updating payment status:", { classId, userId, paymentStatus });
+
+    const enrollment = await ClassEnrollment.findOneAndUpdate(
+      {
+        class: classId,
+        user: userId,
+      },
+      {
+        paymentStatus: paymentStatus,
+      },
+      {
+        new: true,
+      }
+    )
+      .populate("user", "username email")
+      .populate("class", "className");
+
+    if (!enrollment) {
+      return res.status(404).json({
+        message: "Không tìm thấy enrollment",
+      });
+    }
+
+    console.log("Payment status updated:", enrollment);
+
+    res.status(200).json({
+      message: "Cập nhật trạng thái thanh toán thành công",
+      enrollment,
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({
+      message: "Lỗi khi cập nhật trạng thái thanh toán",
+      error: error.message,
+    });
+  }
+};
+
+>>>>>>> Stashed changes
 // Lấy lớp học của user với status update
 export const getUserClasses = async (req, res) => {
   try {
     const { userId } = req.params;
     const { status } = req.query;
 
+<<<<<<< Updated upstream
     const filter = { user: userId };
+=======
+    // Xác định userId thực tế cần query
+    let targetUserId = userId;
+
+    // Nếu userId trong params khớp với user hiện tại (bao gồm admin), luôn query theo ID đó
+    if (userId === req.user._id.toString()) {
+      targetUserId = userId;
+    } else if (req.user.role === "admin") {
+      // Admin có thể xem lớp học của bất kỳ user nào
+      targetUserId = userId;
+    } else {
+      // User thường chỉ có thể xem lớp của mình
+      targetUserId = req.user._id.toString();
+    }
+
+    const filter = { user: targetUserId };
+>>>>>>> Stashed changes
     if (status) filter.status = status;
 
     const enrollments = await ClassEnrollment.find(filter)
       .populate({
         path: "class",
+<<<<<<< Updated upstream
+=======
+        select:
+          "className serviceName instructorName description maxMembers currentMembers totalSessions currentSession price startDate endDate schedule status location requirements", // Explicitly include schedule
+>>>>>>> Stashed changes
         populate: {
           path: "service",
           select: "name image",
@@ -539,6 +611,7 @@ export const getClasses = async (req, res) => {
         const paidMembersCount = await ClassEnrollment.countDocuments({
           class: classItem._id,
           paymentStatus: true, // Chỉ đếm học viên đã thanh toán
+          status: { $ne: "cancelled" }, // Không đếm enrollment bị hủy
         });
 
         // Cập nhật trạng thái lớp học

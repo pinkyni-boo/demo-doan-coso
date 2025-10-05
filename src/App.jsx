@@ -26,7 +26,21 @@ import UserClasses from "./components/Classes/UserClasses";
 import ClassDetails from "./components/Classes/ClassDetails";
 import ScrollToTop from "./components/common/ScrollToTop";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+<<<<<<< Updated upstream
 import FeedbackPage from "./components/Feedback/FeedbackPage"; // Đúng tên file
+=======
+import FeedbackPage from "./components/Feedback/FeedbackPage";
+import TrainerManagement from "./components/Admin/qlhlv";
+import TrainerDashboard from "./components/Trainer/Dashboard";
+import TrainerClasses from "./components/Trainer/Classes";
+import TrainerSchedule from "./components/Trainer/TrainerSchedule";
+import ScheduleChangeRequests from "./components/Trainer/ScheduleChangeRequests";
+import TrainerClassDetail from "./components/Trainer/ClassDetail";
+import AttendanceFlow from "./components/Trainer/AttendanceFlow";
+import TrainerIssueReport from "./components/Trainer/TrainerIssueReport";
+import NotificationToast from "./components/Common/NotificationToast";
+import PersonalSchedule from "./components/Schedule";
+>>>>>>> Stashed changes
 
 import "./styles/vintage-global.css";
 
@@ -35,6 +49,16 @@ function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+<<<<<<< Updated upstream
+=======
+  // Hook quản lý notifications
+  const { newNotifications, markAsRead, removeNewNotification } =
+    useNotifications(user);
+
+  // Hook để kiểm tra trạng thái tài khoản định kỳ
+  useAccountStatusCheck(user);
+
+>>>>>>> Stashed changes
   useEffect(() => {
     // Safely access localStorage
     try {
@@ -73,8 +97,22 @@ function App({ appName }) {
             {" "}
             {/* Add padding-top for fixed navbar */}
             <Routes>
+<<<<<<< Updated upstream
               {/* Main routes */}
               <Route path="/" element={<HomePage />} />
+=======
+              {/* Home route - có hero section cần full screen */}
+              <Route
+                path="/"
+                element={
+                  <div className="-mt-16">
+                    <HomePage />
+                  </div>
+                }
+              />
+
+              {/* Các routes khác */}
+>>>>>>> Stashed changes
               <Route path="/login" element={<Login setUser={setUser} />} />
               <Route path="/sign-up" element={<SignUp />} />
               <Route path="/club" element={<Club />} />

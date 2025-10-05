@@ -54,6 +54,15 @@ const PaymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    rejectedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
   },
   { timestamps: true }
 );

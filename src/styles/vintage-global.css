@@ -171,7 +171,7 @@ section,
 
 /* Vintage Color Palette - Màu trầm hơn */
 :root {
-  --vintage-primary: #8b5a2b;
+  --vintage-primary: #2c3e50;
   --vintage-primary-dark: #6d4219;
   --vintage-secondary: #7a5b56;
   --vintage-accent: #a8927e;
@@ -236,8 +236,12 @@ body {
 
 /* Button Styles - Màu trầm hơn */
 .btn-vintage-primary {
-  background: var(--gradient-luxury);
-  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--vintage-gold) 0%,
+    var(--vintage-accent) 100%
+  );
+  color: var(--vintage-dark);
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 0.5rem;
@@ -252,7 +256,11 @@ body {
 .btn-vintage-primary:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-vintage);
-  background: linear-gradient(135deg, #6d4219 0%, #5a3315 100%);
+  background: linear-gradient(
+    135deg,
+    var(--vintage-accent) 0%,
+    var(--vintage-gold) 100%
+  );
 }
 
 .btn-vintage-secondary {

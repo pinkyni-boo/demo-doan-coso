@@ -10,6 +10,15 @@ export default function NavBar({ user, setUser }) {
   const location = useLocation();
   const navigate = useNavigate();
 
+<<<<<<< Updated upstream
+=======
+  // Hook quản lý notifications - pass user to prevent unauthorized calls
+  const { unreadCount } = useNotifications(user);
+
+  // Show notification button for all logged in users
+  const showNotifications = !!user; // Show for all logged in users
+
+>>>>>>> Stashed changes
   // Kiểm tra đường dẫn hiện tại để highlight menu item active
   const isActive = (path) => {
     return location.pathname === path;
@@ -121,15 +130,61 @@ export default function NavBar({ user, setUser }) {
   const authenticatedNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
+<<<<<<< Updated upstream
     { name: "Lớp học", path: "/classes" },
     { name: "Lịch của tôi", path: "/my-classes" },
     { name: "Đánh giá", path: "/feedback" },
+=======
+    {
+      name: "Lớp học",
+      dropdown: [
+        { name: "Lớp của tôi", path: "/my-classes" },
+        { name: "Đăng ký lớp", path: "/classes" },
+      ],
+    },
+    { name: "Lịch tập", path: "/schedule" },
+>>>>>>> Stashed changes
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
   ];
 
+<<<<<<< Updated upstream
   // Chọn menu dựa trên trạng thái đăng nhập
   const navLinks = user ? authenticatedNavLinks : publicNavLinks;
+=======
+  const trainerNavLinks = [
+    { name: "CLB", path: "/club" },
+    { name: "Dịch vụ", path: "/services" },
+    { name: "Lịch dạy", path: "/trainer/schedule" },
+    { name: "Lớp học", path: "/trainer/classes" },
+    { name: "Báo cáo vấn đề", path: "/trainer/issue-report" },
+  ];
+
+  // Menu cho admin - có tất cả chức năng user + trainer + admin
+  const adminNavLinks = [
+    { name: "CLB", path: "/club" },
+    { name: "Dịch vụ", path: "/services" },
+    {
+      name: "Lớp học",
+      dropdown: [
+        { name: "Lớp của tôi", path: "/my-classes" },
+        { name: "Đăng ký lớp", path: "/classes" },
+      ],
+    },
+    { name: "Lịch tập", path: "/schedule" },
+    { name: "Thẻ thành viên", path: "/membership" },
+    { name: "Thanh toán", path: "/payment" },
+  ];
+
+  // Chọn menu dựa trên role và trạng thái đăng nhập
+  const navLinks = user
+    ? user.role === "admin"
+      ? adminNavLinks
+      : user.role === "trainer"
+      ? trainerNavLinks
+      : authenticatedNavLinks
+    : publicNavLinks;
+>>>>>>> Stashed changes
 
   return (
     <header
@@ -192,6 +247,7 @@ export default function NavBar({ user, setUser }) {
             ))}
           </nav>
 
+<<<<<<< Updated upstream
           {/* User Menu / Auth Buttons */}
           <div className="flex items-center space-x-4">
             {user ? (
@@ -207,6 +263,137 @@ export default function NavBar({ user, setUser }) {
                     }`}
                   >
                     {/* Avatar */}
+=======
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 mx-6">
+              {navLinks.map((link) => (
+                <div key={link.name} className="relative">
+                  {link.dropdown ? (
+                    // Dropdown menu item with improved interaction
+                    <div
+                      className="relative"
+                      onMouseEnter={() => {
+                        if (dropdownTimeout) {
+                          clearTimeout(dropdownTimeout);
+                          setDropdownTimeout(null);
+                        }
+                        setDropdownOpen({ ...dropdownOpen, [link.name]: true });
+                      }}
+                      onMouseLeave={() => {
+                        const timeout = setTimeout(() => {
+                          setDropdownOpen({
+                            ...dropdownOpen,
+                            [link.name]: false,
+                          });
+                        }, 300); // 300ms delay before closing
+                        setDropdownTimeout(timeout);
+                      }}
+                    >
+                      <button
+                        className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base flex items-center ${
+                          link.dropdown.some((item) => isActive(item.path))
+                            ? isScrolled
+                              ? "text-amber-700 bg-amber-50"
+                              : "text-amber-100 bg-white/15 shadow-lg"
+                            : isScrolled
+                            ? "text-stone-600 hover:text-amber-700 hover:bg-amber-50"
+                            : "text-white/90 hover:text-white hover:bg-white/10"
+                        }`}
+                      >
+                        {link.name}
+                        <svg
+                          className={`ml-1 w-4 h-4 transition-transform duration-200 ${
+                            dropdownOpen[link.name] ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {/* Dropdown Menu with improved usability */}
+                      {dropdownOpen[link.name] && (
+                        <div
+                          className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-2xl border border-amber-200/50 z-50 overflow-hidden backdrop-blur-sm"
+                          onMouseEnter={() => {
+                            if (dropdownTimeout) {
+                              clearTimeout(dropdownTimeout);
+                              setDropdownTimeout(null);
+                            }
+                          }}
+                          onMouseLeave={() => {
+                            const timeout = setTimeout(() => {
+                              setDropdownOpen({
+                                ...dropdownOpen,
+                                [link.name]: false,
+                              });
+                            }, 200);
+                            setDropdownTimeout(timeout);
+                          }}
+                        >
+                          {link.dropdown.map((dropdownItem) => (
+                            <Link
+                              key={dropdownItem.name}
+                              to={dropdownItem.path}
+                              className={`block px-5 py-4 vintage-sans text-sm transition-colors duration-200 hover:scale-[1.02] transform ${
+                                isActive(dropdownItem.path)
+                                  ? "bg-amber-50 text-amber-700 font-semibold border-l-4 border-amber-500"
+                                  : "text-stone-700 hover:bg-amber-50 hover:text-amber-700 hover:pl-6"
+                              }`}
+                              onClick={() => {
+                                setDropdownOpen({});
+                                if (dropdownTimeout) {
+                                  clearTimeout(dropdownTimeout);
+                                  setDropdownTimeout(null);
+                                }
+                              }}
+                            >
+                              {dropdownItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Regular menu item
+                    <Link
+                      to={link.path}
+                      className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base ${
+                        isActive(link.path)
+                          ? isScrolled
+                            ? "text-amber-700 bg-amber-50"
+                            : "text-amber-100 bg-white/15 shadow-lg"
+                          : isScrolled
+                          ? "text-stone-600 hover:text-amber-700 hover:bg-amber-50"
+                          : "text-white/90 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {link.name}
+                      <span
+                        className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-amber-600 transition-all duration-300 group-hover:w-3/4 ${
+                          isActive(link.path) ? "w-3/4" : ""
+                        }`}
+                      ></span>
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </nav>
+
+            {/* User Menu / Auth Buttons */}
+            <div className="flex items-center space-x-4">
+              {user ? (
+                <>
+                  {/* Notification Button - Always show for logged in users */}
+                  {showNotifications && (
+>>>>>>> Stashed changes
                     <div className="relative">
                       {renderAvatar()}
                       {/* Online indicator */}
@@ -307,6 +494,7 @@ export default function NavBar({ user, setUser }) {
 
                         <div className="border-t border-amber-200/50 my-2"></div>
 
+<<<<<<< Updated upstream
                         <button
                           onClick={handleLogout}
                           className="flex items-center w-full px-4 py-3 vintage-sans text-red-600 hover:bg-red-50 transition-colors duration-200"
@@ -315,6 +503,134 @@ export default function NavBar({ user, setUser }) {
                           Đăng xuất
                         </button>
                       </div>
+=======
+                          {user.role === "trainer" && (
+                            <Link
+                              to="/trainer/dashboard"
+                              className="flex items-center px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <Calendar className="h-4 w-4 mr-3 text-amber-600" />
+                              Dashboard HLV
+                            </Link>
+                          )}
+
+                          <div className="border-t border-amber-200/50 my-2"></div>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center w-full px-4 py-3 vintage-sans text-red-600 hover:bg-red-50 transition-colors duration-200"
+                          >
+                            <LogOut className="h-4 w-4 mr-3" />
+                            Đăng xuất
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center space-x-3">
+                  <Link to="/login">
+                    <button
+                      className={`px-6 py-2 rounded-lg vintage-sans font-medium transition-all duration-300 ${
+                        isScrolled
+                          ? "bg-white border border-amber-300 text-amber-700 hover:bg-amber-50"
+                          : "border border-white text-white hover:bg-white hover:text-amber-700"
+                      }`}
+                    >
+                      Đăng nhập
+                    </button>
+                  </Link>
+                  <Link to="/sign-up">
+                    <button className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-yellow-600 hover:to-amber-600 text-white px-6 py-2 rounded-lg vintage-sans font-medium shadow-lg hover:shadow-xl transition-all duration-300">
+                      Đăng ký
+                    </button>
+                  </Link>
+                </div>
+              )}
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className={`lg:hidden p-2 rounded-lg transition-colors duration-200 ${
+                  isScrolled
+                    ? "text-stone-600 hover:text-stone-800 hover:bg-amber-50"
+                    : "text-amber-100 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {mobileMenuOpen && (
+          <div className="mobile-menu lg:hidden bg-white shadow-2xl border-t border-amber-200/50">
+            <div className="px-4 py-6 space-y-2">
+              {navLinks.map((link) => (
+                <div key={link.name}>
+                  {link.dropdown ? (
+                    // Mobile dropdown
+                    <div>
+                      <button
+                        onClick={() =>
+                          setDropdownOpen({
+                            ...dropdownOpen,
+                            [link.name]: !dropdownOpen[link.name],
+                          })
+                        }
+                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg vintage-sans font-medium transition-colors duration-200 ${
+                          link.dropdown.some((item) => isActive(item.path))
+                            ? "bg-amber-50 text-amber-700"
+                            : "text-stone-800 hover:bg-amber-50 hover:text-amber-700"
+                        }`}
+                      >
+                        {link.name}
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            dropdownOpen[link.name] ? "rotate-180" : ""
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+
+                      {dropdownOpen[link.name] && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {link.dropdown.map((dropdownItem) => (
+                            <Link
+                              key={dropdownItem.name}
+                              to={dropdownItem.path}
+                              className={`block px-4 py-2 rounded-lg vintage-sans text-sm transition-colors duration-200 ${
+                                isActive(dropdownItem.path)
+                                  ? "bg-amber-100 text-amber-700 font-semibold"
+                                  : "text-stone-600 hover:bg-amber-50 hover:text-amber-700"
+                              }`}
+                              onClick={() => {
+                                setMobileMenuOpen(false);
+                                setDropdownOpen({});
+                              }}
+                            >
+                              {dropdownItem.name}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+>>>>>>> Stashed changes
                     </div>
                   )}
                 </div>

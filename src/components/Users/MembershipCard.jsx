@@ -1353,7 +1353,7 @@ const MembershipCard = ({ user, cardVariants }) => {
       >
         <motion.button
           onClick={() => navigate("/classes")}
-          className="relative overflow-hidden bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-yellow-600 hover:to-amber-600 text-white p-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group"
+          className="relative overflow-hidden bg-gradient-to-r from-vintage-gold to-vintage-accent hover:from-vintage-accent hover:to-vintage-gold text-vintage-dark p-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >

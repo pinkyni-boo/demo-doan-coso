@@ -418,7 +418,7 @@ export default function PaidClassesPage() {
             </p>
             <button
               onClick={() => navigate("/schedule")}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200"
+              className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-vintage-gold to-vintage-accent hover:from-vintage-accent hover:to-vintage-gold text-vintage-dark rounded-lg transition-colors duration-200 font-medium shadow-lg hover:shadow-xl"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

@@ -23,6 +23,13 @@ export const createPayment = async (req, res) => {
         .json({ message: "Không có mục nào để thanh toán" });
     }
 
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return res
+        .status(400)
+        .json({ message: "Số tiền thanh toán không hợp lệ" });
+    }
+
     // Tạo payment record
     const payment = new Payment({
       user: userId,
@@ -35,7 +42,21 @@ export const createPayment = async (req, res) => {
     });
 
     await payment.save();
+    console.log("Payment created successfully:", payment._id);
 
+<<<<<<< Updated upstream
+=======
+    // Gửi thông báo cho admin khi có yêu cầu thanh toán mới
+    try {
+      const user = req.user;
+      await NotificationService.notifyAdminPaymentConfirmation(payment, user);
+      console.log("Admin notification sent");
+    } catch (notifyError) {
+      console.error("Error sending admin notification:", notifyError);
+      // Continue even if notification fails
+    }
+
+>>>>>>> Stashed changes
     res.status(201).json({
       message: "Tạo yêu cầu thanh toán thành công",
       payment,
@@ -49,6 +70,11 @@ export const createPayment = async (req, res) => {
 export const getPayments = async (req, res) => {
   try {
     const userId = req.user._id;
+<<<<<<< Updated upstream
+=======
+
+    // Admin có thể xem tất cả payments của mình như user bình thường
+>>>>>>> Stashed changes
     const payments = await Payment.find({ user: userId }).sort({
       createdAt: -1,
     });
@@ -81,12 +107,22 @@ export const approvePayment = async (req, res) => {
     const { paymentId } = req.params;
     const { registrationIds } = req.body;
 
+<<<<<<< Updated upstream
     console.log(
       "Approving payment:",
       paymentId,
       "with registrations:",
       registrationIds
     );
+=======
+    console.log("Approving payment:", paymentId);
+    console.log("Registration IDs from request:", registrationIds);
+
+    // Validate payment ID format
+    if (!paymentId || !paymentId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "ID thanh toán không hợp lệ" });
+    }
+>>>>>>> Stashed changes
 
     // Tìm payment
     const payment = await Payment.findById(paymentId);
@@ -94,16 +130,38 @@ export const approvePayment = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thanh toán" });
     }
 
+<<<<<<< Updated upstream
     // Cập nhật trạng thái payment
     payment.status = "completed";
     payment.completedAt = new Date();
     payment.approvedBy = req.user.username || req.user._id;
     await payment.save();
+=======
+    console.log("Found payment:", payment);
+>>>>>>> Stashed changes
 
-    // Cập nhật paymentStatus cho các ClassEnrollment
-    if (registrationIds && registrationIds.length > 0) {
-      for (const regId of registrationIds) {
+    // Cập nhật trạng thái payment
+    payment.status = "completed"; // Use "completed" instead of "approved" to match enum
+    payment.completedAt = new Date();
+    payment.approvedBy = req.user.username || req.user._id;
+    await payment.save();
+
+    console.log("Payment updated successfully");
+
+    // Cập nhật paymentStatus cho các ClassEnrollment/Membership
+    const registrationIdsToProcess = registrationIds || payment.registrationIds;
+
+    if (registrationIdsToProcess && registrationIdsToProcess.length > 0) {
+      for (const regId of registrationIdsToProcess) {
         try {
+          console.log("Processing registration ID:", regId);
+
+          // Validate registration ID format
+          if (!regId || !regId.match(/^[0-9a-fA-F]{24}$/)) {
+            console.log("Invalid registration ID format:", regId);
+            continue;
+          }
+
           // Kiểm tra xem regId là ClassEnrollment hay Membership
           const classEnrollment = await ClassEnrollment.findById(regId);
 
@@ -111,7 +169,24 @@ export const approvePayment = async (req, res) => {
             // Cập nhật trạng thái thanh toán cho ClassEnrollment
             classEnrollment.paymentStatus = true;
             await classEnrollment.save();
+<<<<<<< Updated upstream
             console.log("Updated ClassEnrollment:", regId);
+=======
+
+            console.log("Updated ClassEnrollment:", regId);
+
+            // Thông báo cho user
+            try {
+              await NotificationService.notifyUserPaymentApproved(
+                payment,
+                req.user
+              );
+              console.log("User notification sent successfully");
+            } catch (notifyError) {
+              console.error("Error sending notification:", notifyError);
+              // Continue even if notification fails - don't throw
+            }
+>>>>>>> Stashed changes
           } else {
             // Kiểm tra xem có phải Membership không
             const membership = await Membership.findById(regId);
@@ -119,16 +194,38 @@ export const approvePayment = async (req, res) => {
               membership.paymentStatus = true;
               membership.status = "active";
               await membership.save();
+<<<<<<< Updated upstream
               console.log("Updated Membership:", regId);
+=======
+
+              console.log("Updated Membership:", regId);
+
+              // Thông báo cho user
+              try {
+                await NotificationService.notifyUserPaymentApproved(
+                  payment,
+                  req.user
+                );
+                console.log(
+                  "User notification sent successfully for membership"
+                );
+              } catch (notifyError) {
+                console.error("Error sending notification:", notifyError);
+                // Continue even if notification fails - don't throw
+              }
+>>>>>>> Stashed changes
             } else {
               console.log("Registration not found:", regId);
             }
           }
         } catch (error) {
           console.error("Error updating registration:", regId, error);
+          // Continue with other registrations even if one fails
         }
       }
     }
+
+    console.log("All registrations processed successfully");
 
     res.json({
       message: "Xác nhận thanh toán thành công",
@@ -136,7 +233,11 @@ export const approvePayment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error approving payment:", error);
-    res.status(500).json({ message: "Lỗi server khi xác nhận thanh toán" });
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      message: "Lỗi server khi xác nhận thanh toán",
+      error: error.message,
+    });
   }
 };
 
@@ -145,14 +246,99 @@ export const rejectPayment = async (req, res) => {
     const { paymentId } = req.params;
     const { rejectionReason } = req.body;
 
-    const payment = await Payment.findById(paymentId);
+    console.log("Rejecting payment:", paymentId);
+    console.log("Rejection reason:", rejectionReason);
+
+    // Validate paymentId format
+    if (!paymentId || !paymentId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "ID thanh toán không hợp lệ" });
+    }
+
+    const payment = await Payment.findById(paymentId).populate(
+      "user",
+      "username fullName email"
+    );
     if (!payment) {
       return res.status(404).json({ message: "Không tìm thấy thanh toán" });
     }
 
+    console.log("Found payment:", payment._id, "Status:", payment.status);
+
+    // Kiểm tra trạng thái payment - chỉ reject những payment đang pending
+    if (payment.status !== "pending") {
+      return res.status(400).json({
+        message: `Không thể từ chối thanh toán có trạng thái ${payment.status}`,
+      });
+    }
+
+    // Cập nhật trạng thái payment
     payment.status = "cancelled";
     payment.rejectionReason = rejectionReason || "Admin từ chối thanh toán";
+    payment.rejectedAt = new Date();
+    payment.rejectedBy = req.user._id;
     await payment.save();
+
+    console.log("Payment status updated to cancelled");
+
+    // Xử lý registrationIds nếu có - đảm bảo không tính vào sĩ số
+    const registrationIds = payment.registrationIds;
+    if (registrationIds && registrationIds.length > 0) {
+      console.log("Processing registrations for rejection:", registrationIds);
+
+      for (const regId of registrationIds) {
+        try {
+          console.log("Processing registration ID:", regId);
+
+          // Validate registration ID format
+          if (!regId || !regId.match(/^[0-9a-fA-F]{24}$/)) {
+            console.log("Invalid registration ID format:", regId);
+            continue;
+          }
+
+          // Kiểm tra xem regId là ClassEnrollment hay Membership
+          const classEnrollment = await ClassEnrollment.findById(regId);
+
+          if (classEnrollment) {
+            // Đảm bảo paymentStatus = false để không tính vào sĩ số
+            classEnrollment.paymentStatus = false;
+            classEnrollment.status = "cancelled"; // Đánh dấu đăng ký bị hủy
+            await classEnrollment.save();
+
+            console.log("ClassEnrollment marked as cancelled:", regId);
+          } else {
+            // Kiểm tra xem có phải Membership không
+            const membership = await Membership.findById(regId);
+            if (membership) {
+              membership.paymentStatus = false;
+              membership.status = "cancelled"; // Đánh dấu membership bị hủy
+              await membership.save();
+
+              console.log("Membership marked as cancelled:", regId);
+            } else {
+              console.log("Registration not found:", regId);
+            }
+          }
+        } catch (error) {
+          console.error("Error processing registration:", regId, error);
+          // Continue with other registrations even if one fails
+        }
+      }
+    }
+
+    // Gửi thông báo cho user về việc thanh toán bị từ chối
+    try {
+      await NotificationService.notifyUserPaymentRejected(
+        payment,
+        req.user,
+        rejectionReason
+      );
+      console.log("User notification sent successfully for payment rejection");
+    } catch (notifyError) {
+      console.error("Error sending rejection notification:", notifyError);
+      // Continue even if notification fails - don't throw
+    }
+
+    console.log("Payment rejection processed successfully");
 
     res.json({
       message: "Từ chối thanh toán thành công",
@@ -160,7 +346,11 @@ export const rejectPayment = async (req, res) => {
     });
   } catch (error) {
     console.error("Error rejecting payment:", error);
-    res.status(500).json({ message: "Lỗi server khi từ chối thanh toán" });
+    console.error("Error stack:", error.stack);
+    res.status(500).json({
+      message: "Lỗi server khi từ chối thanh toán",
+      error: error.message,
+    });
   }
 };
 
@@ -487,3 +677,72 @@ export const deleteEnrollment = async (req, res) => {
     });
   }
 };
+<<<<<<< Updated upstream
+=======
+
+// Lấy thống kê thanh toán cho admin dashboard
+export const getPaymentStats = async (req, res) => {
+  try {
+    // Tính tổng doanh thu từ các thanh toán đã được duyệt
+    const revenueStats = await Payment.aggregate([
+      { $match: { status: "approved" } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$amount" },
+          totalPayments: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Thống kê theo tháng
+    const monthlyStats = await Payment.aggregate([
+      { $match: { status: "approved" } },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          revenue: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": -1, "_id.month": -1 } },
+      { $limit: 12 },
+    ]);
+
+    // Thống kê theo trạng thái
+    const statusStats = await Payment.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const totalRevenue =
+      revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
+    const totalPayments =
+      revenueStats.length > 0 ? revenueStats[0].totalPayments : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalRevenue,
+        totalPayments,
+        monthlyStats,
+        statusStats,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching payment stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy thống kê thanh toán",
+    });
+  }
+};
+>>>>>>> Stashed changes

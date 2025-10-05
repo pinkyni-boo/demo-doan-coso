@@ -39,9 +39,9 @@ export default function ClassManagement() {
     serviceName: "",
     instructorName: "",
     description: "",
-    maxMembers: 20,
-    totalSessions: 12,
-    price: 0,
+    maxMembers: "",
+    totalSessions: "",
+    price: "",
     startDate: "",
     endDate: "",
     schedule: [],
@@ -96,9 +96,19 @@ export default function ClassManagement() {
       const submitData = {
         ...formData,
         serviceId: formData.serviceId, // Gửi serviceId để backend xử lý
+<<<<<<< Updated upstream
         maxMembers: parseInt(formData.maxMembers),
         totalSessions: parseInt(formData.totalSessions),
         price: parseInt(formData.price),
+=======
+        maxMembers: formData.maxMembers ? parseInt(formData.maxMembers) : 20,
+        totalSessions: formData.totalSessions
+          ? parseInt(formData.totalSessions)
+          : 12,
+        price: formData.price ? parseInt(formData.price) : 0,
+        // Only include location as that's what the Class model expects
+        location: formData.location || formData.roomName,
+>>>>>>> Stashed changes
       };
 
       if (editingClass) {
@@ -150,9 +160,9 @@ export default function ClassManagement() {
       serviceName: "",
       instructorName: "",
       description: "",
-      maxMembers: 20,
-      totalSessions: 12,
-      price: 0,
+      maxMembers: "",
+      totalSessions: "",
+      price: "",
       startDate: "",
       endDate: "",
       schedule: [],
@@ -466,11 +476,13 @@ export default function ClassManagement() {
                     </label>
                     <input
                       type="number"
-                      value={formData.maxMembers}
+                      value={formData.maxMembers || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          maxMembers: parseInt(e.target.value),
+                          maxMembers: e.target.value
+                            ? parseInt(e.target.value)
+                            : "",
                         })
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -485,11 +497,13 @@ export default function ClassManagement() {
                     </label>
                     <input
                       type="number"
-                      value={formData.totalSessions}
+                      value={formData.totalSessions || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          totalSessions: parseInt(e.target.value),
+                          totalSessions: e.target.value
+                            ? parseInt(e.target.value)
+                            : "",
                         })
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -504,11 +518,11 @@ export default function ClassManagement() {
                     </label>
                     <input
                       type="number"
-                      value={formData.price}
+                      value={formData.price || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          price: parseInt(e.target.value),
+                          price: e.target.value ? parseInt(e.target.value) : "",
                         })
                       }
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

@@ -115,6 +115,16 @@ export default function PaymentManagement() {
     try {
       const token = localStorage.getItem("token");
 
+      // Validate token
+      if (!token) {
+        throw new Error("Không có token xác thực");
+      }
+
+      // Validate paymentId format
+      if (!paymentId || !paymentId.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error("ID thanh toán không hợp lệ");
+      }
+
       // Find the payment in the current payments state instead of pendingPayments
       const payment = payments.find((p) => p._id === paymentId);
       if (!payment) {
@@ -140,10 +150,18 @@ export default function PaymentManagement() {
         }
       );
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Không thể xác nhận thanh toán");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Server response error:", errorData);
+        throw new Error(
+          errorData.message || `Server error: ${response.status}`
+        );
       }
+
+      const responseData = await response.json();
+      console.log("Approve response:", responseData);
 
       // Update UI by removing the approved payment
       setPayments((prev) => prev.filter((p) => p._id !== paymentId));
@@ -186,7 +204,7 @@ export default function PaymentManagement() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ reason: rejectionReason }),
+          body: JSON.stringify({ rejectionReason: rejectionReason }),
         }
       );
 
