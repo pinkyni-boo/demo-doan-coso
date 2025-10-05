@@ -491,29 +491,23 @@ export const updateMaintenanceStatus = async (req, res) => {
     ]);
 
     // Send notifications
-    if (status === "completed") {
-      // Notification for issue reporter (if exists)
-      if (maintenance.issueReport) {
-        const issueReport = await IssueReport.findById(
-          maintenance.issueReport
-        ).populate("reportedBy", "_id");
+    if (status === "completed" && maintenance.issueReport) {
+      const issueReport = await IssueReport.findById(
+        maintenance.issueReport
+      ).populate("reportedBy", "_id");
 
-        if (issueReport && issueReport.reportedBy) {
-          await NotificationService.createNotification({
-            recipients: [issueReport.reportedBy._id],
-            type: "maintenance_completed",
-            title: "Bảo trì đã hoàn thành",
-            message: `Bảo trì cho "${maintenance.title}" đã hoàn thành`,
-            data: {
-              maintenanceId: maintenance._id,
-              issueReportId: maintenance.issueReport,
-            },
-          });
-        }
+      if (issueReport && issueReport.reportedBy) {
+        await NotificationService.createNotification({
+          recipients: [issueReport.reportedBy._id],
+          type: "maintenance_completed",
+          title: "Bảo trì đã hoàn thành",
+          message: `Bảo trì cho "${maintenance.title}" đã hoàn thành`,
+          data: {
+            maintenanceId: maintenance._id,
+            issueReportId: maintenance.issueReport,
+          },
+        });
       }
-      
-      // 🔔 Gửi thông báo cho tất cả trainers và users khi bảo trì hoàn thành
-      await sendMaintenanceCompletionNotifications(updatedMaintenance);
     }
 
     res.json({
@@ -719,112 +713,6 @@ export const getMaintenanceSchedulesForTrainer = async (req, res) => {
   }
 };
 
-// Kiểm tra xung đột bảo trì cho lịch học
-export const checkMaintenanceConflicts = async (req, res) => {
-  try {
-    const { date, roomId, startTime, endTime } = req.query;
-    
-    if (!date) {
-      return res.status(400).json({
-        message: "Ngày kiểm tra là bắt buộc"
-      });
-    }
-
-    // Convert date to start and end of day
-    const checkDate = new Date(date);
-    const startOfDay = new Date(checkDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(checkDate.setHours(23, 59, 59, 999));
-
-    // Build filter for maintenance schedules
-    const filter = {
-      scheduledDate: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      },
-      status: { $in: ['scheduled', 'in_progress'] } // Only active maintenance
-    };
-
-    // If roomId is provided, filter by room
-    if (roomId) {
-      filter.room = roomId;
-    }
-
-    const conflicts = await MaintenanceSchedule.find(filter)
-      .populate('room', 'roomName roomCode')
-      .populate('equipment', 'equipmentName equipmentCode')
-      .select('title maintenanceType scheduledDate estimatedDuration priority status')
-      .sort({ scheduledDate: 1 });
-
-    // If specific time range is provided, filter by time overlap
-    let filteredConflicts = conflicts;
-    if (startTime && endTime && conflicts.length > 0) {
-      // For more detailed time checking, you can implement time overlap logic here
-      // For now, we'll return all maintenance on that date
-      filteredConflicts = conflicts;
-    }
-
-    res.status(200).json({
-      conflicts: filteredConflicts,
-      hasConflicts: filteredConflicts.length > 0,
-      date: date,
-      message: filteredConflicts.length > 0 
-        ? `Có ${filteredConflicts.length} lịch bảo trì trong ngày này`
-        : 'Không có xung đột bảo trì'
-    });
-
-  } catch (error) {
-    console.error('Error checking maintenance conflicts:', error);
-    res.status(500).json({
-      message: 'Lỗi khi kiểm tra xung đột bảo trì',
-      error: error.message
-    });
-  }
-};
-
-// Function gửi thông báo khi bảo trì hoàn thành
-const sendMaintenanceCompletionNotifications = async (maintenance) => {
-  try {
-    const targetName = maintenance.equipment?.equipmentName || maintenance.room?.roomName || 'Thiết bị/Phòng';
-    
-    // Gửi thông báo cho tất cả trainers
-    const trainers = await User.find({ role: 'trainer' });
-    for (const trainer of trainers) {
-      await NotificationService.createNotification({
-        recipients: [trainer._id],
-        type: 'maintenance_completed',
-        title: '✅ Bảo trì hoàn thành',
-        message: `Bảo trì ${maintenance.title} cho ${targetName} đã hoàn thành. Có thể sử dụng bình thường.`,
-        data: {
-          maintenanceId: maintenance._id,
-          targetType: maintenance.targetType,
-          equipmentId: maintenance.equipment?._id,
-          roomId: maintenance.room?._id
-        }
-      });
-    }
-    
-    // Gửi thông báo cho users (nếu là room maintenance)
-    if (maintenance.targetType === 'room' && maintenance.room) {
-      const users = await User.find({ role: 'user' });
-      for (const user of users) {
-        await NotificationService.createNotification({
-          recipients: [user._id],
-          type: 'maintenance_completed',
-          title: '🎉 Phòng tập đã sẵn sàng',
-          message: `Bảo trì phòng ${targetName} đã hoàn thành. Các lớp học có thể diễn ra bình thường.`,
-          data: {
-            maintenanceId: maintenance._id,
-            roomId: maintenance.room._id
-          }
-        });
-      }
-    }
-    
-  } catch (error) {
-    console.error('Error sending maintenance completion notifications:', error);
-  }
-};
-
 export default {
   getAllMaintenanceSchedules,
   createMaintenanceSchedule,
@@ -834,5 +722,4 @@ export default {
   getOverdueMaintenance,
   getMaintenanceReport,
   getMaintenanceSchedulesForTrainer,
-  checkMaintenanceConflicts,
 };

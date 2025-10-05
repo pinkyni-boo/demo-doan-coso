@@ -5,7 +5,8 @@ import User from "../models/User.js";
 export const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
-   
+    console.log("=== TOKEN VERIFICATION ===");
+    console.log("Authorization header:", authHeader);
 
     const token = authHeader?.replace("Bearer ", "");
     console.log(
@@ -86,26 +87,40 @@ export const verifyAdmin = (req, res, next) => {
   next();
 };
 
-// Middleware cho phép admin truy cập tất cả, user chỉ truy cập của mình
-export const verifyOwnerOrAdmin = (req, res, next) => {
+// Middleware xác thực user hoặc admin
+export const verifyUserOrAdmin = (req, res, next) => {
   const { userId } = req.params;
-  
-  // Admin có thể truy cập tất cả
-  if (req.user.role === "admin") {
-    return next();
+
+  if (req.user.role === "admin" || req.user._id.toString() === userId) {
+    next();
+  } else {
+    res.status(403).json({
+      message: "Truy cập bị từ chối. Bạn chỉ có thể truy cập dữ liệu của mình.",
+    });
   }
-  
-  // User chỉ có thể truy cập dữ liệu của mình
-  if (req.user._id.toString() === userId) {
-    return next();
-  }
-  
-  return res.status(403).json({
-    message: "Truy cập bị từ chối. Bạn chỉ có thể truy cập dữ liệu của mình.",
-  });
 };
 
-// Middleware cho phép admin hoặc trainer
+export const verifyTrainer = (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Không có thông tin user" });
+    }
+
+    if (req.user.role !== "trainer") {
+      return res
+        .status(403)
+        .json({ message: "Chỉ huấn luyện viên mới có quyền truy cập" });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Trainer verification error:", error);
+    return res
+      .status(500)
+      .json({ message: "Lỗi server khi xác thực quyền huấn luyện viên" });
+  }
+};
+
 export const verifyAdminOrTrainer = (req, res, next) => {
   try {
     console.log("=== VERIFY ADMIN OR TRAINER ===");
@@ -131,58 +146,6 @@ export const verifyAdminOrTrainer = (req, res, next) => {
   }
 };
 
-// Middleware cho phép tất cả user đã đăng nhập (admin có toàn quyền)
-export const verifyAuthenticatedUser = (req, res, next) => {
-  // Admin luôn được phép
-  if (req.user.role === "admin") {
-    return next();
-  }
-  
-  // Các role khác chỉ cần đã đăng nhập
-  if (req.user) {
-    return next();
-  }
-  
-  return res.status(401).json({
-    message: "Bạn cần đăng nhập để truy cập.",
-  });
-};
-
-// Middleware xác thực user hoặc admin
-export const verifyUserOrAdmin = (req, res, next) => {
-  const { userId } = req.params;
-
-  if (req.user.role === "admin" || req.user._id.toString() === userId) {
-    next();
-  } else {
-    res.status(403).json({
-      message: "Truy cập bị từ chối. Bạn chỉ có thể truy cập dữ liệu của mình.",
-    });
-  }
-};
-
-export const verifyTrainer = (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Không có thông tin user" });
-    }
-
-    // Admin có thể truy cập tất cả chức năng trainer
-    if (req.user.role === "admin" || req.user.role === "trainer") {
-      return next();
-    }
-
-    return res
-      .status(403)
-      .json({ message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập" });
-  } catch (error) {
-    console.error("Trainer verification error:", error);
-    return res
-      .status(500)
-      .json({ message: "Lỗi server khi xác thực quyền huấn luyện viên" });
-  }
-};
-
 // Thêm alias exports để backward compatibility
 export const isAuthenticated = verifyToken;
 export const isAdmin = verifyAdmin;
@@ -193,9 +156,7 @@ export const authenticateToken = verifyToken;
 export default {
   verifyToken,
   verifyAdmin,
-  verifyUserOrAdmin: verifyOwnerOrAdmin, // Update alias
-  verifyOwnerOrAdmin,
+  verifyUserOrAdmin,
   verifyTrainer,
   verifyAdminOrTrainer,
-  verifyAuthenticatedUser,
 };

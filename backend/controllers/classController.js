@@ -452,27 +452,12 @@ export const getUserClasses = async (req, res) => {
     const { userId } = req.params;
     const { status } = req.query;
 
-    // Xác định userId thực tế cần query
-    let targetUserId = userId;
-    
-    // Nếu userId trong params khớp với user hiện tại (bao gồm admin), luôn query theo ID đó
-    if (userId === req.user._id.toString()) {
-      targetUserId = userId;
-    } else if (req.user.role === "admin") {
-      // Admin có thể xem lớp học của bất kỳ user nào
-      targetUserId = userId;
-    } else {
-      // User thường chỉ có thể xem lớp của mình
-      targetUserId = req.user._id.toString();
-    }
-
-    const filter = { user: targetUserId };
+    const filter = { user: userId };
     if (status) filter.status = status;
 
     const enrollments = await ClassEnrollment.find(filter)
       .populate({
         path: "class",
-        select: "className serviceName instructorName description maxMembers currentMembers totalSessions currentSession price startDate endDate schedule status location requirements", // Explicitly include schedule
         populate: {
           path: "service",
           select: "name image",

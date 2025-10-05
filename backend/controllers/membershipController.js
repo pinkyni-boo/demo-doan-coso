@@ -116,17 +116,9 @@ export const getUserMembership = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Xác định userId cần query
-    let targetUserId = userId;
-    
-    // Nếu userId khớp với user hiện tại hoặc admin query cho mình
-    if (userId === req.user._id.toString() || (req.user.role === "admin" && userId)) {
-      targetUserId = userId;
-    }
-
     // Find active membership for user
     const membership = await Membership.findOne({
-      user: targetUserId,
+      user: userId,
       status: "active",
     });
 

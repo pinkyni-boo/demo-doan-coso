@@ -21,15 +21,10 @@ import {
   BarChart3,
   Target,
   Award,
-  Star,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import ClassFeedbackModal from './ClassFeedbackModal';
-import ViewFeedbackModal from './ViewFeedbackModal';
 
 export default function UserClasses() {
-  // History view toggle
-  const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +35,6 @@ export default function UserClasses() {
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [attendanceData, setAttendanceData] = useState({});
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [selectedClassForFeedback, setSelectedClassForFeedback] = useState(null);
-  const [ratedClasses, setRatedClasses] = useState(new Set());
-  const [showViewFeedbackModal, setShowViewFeedbackModal] = useState(false);
-  const [selectedFeedbackToView, setSelectedFeedbackToView] = useState(null);
-  const [userFeedbacks, setUserFeedbacks] = useState({});
 
   const statusOptions = [
     { value: "all", label: "Tất cả" },
@@ -100,7 +89,6 @@ export default function UserClasses() {
       // Fetch attendance data for each class
       if (response.data && response.data.length > 0) {
         fetchAttendanceData(uid);
-        fetchUserRatedClasses();
       }
     } catch (error) {
       console.error("Lỗi khi lấy lớp học của user:", error);
@@ -149,36 +137,6 @@ export default function UserClasses() {
       setAttendanceData(attendanceByClass);
     } catch (error) {
       console.error("Lỗi khi tải dữ liệu điểm danh:", error);
-    }
-  };
-
-  const fetchUserRatedClasses = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `http://localhost:5000/api/feedback/my-feedbacks`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      // Extract class IDs and store feedback data
-      const ratedClassIds = new Set();
-      const feedbacksByClass = {};
-      
-      if (response.data.feedbacks && Array.isArray(response.data.feedbacks)) {
-        response.data.feedbacks.forEach((feedback) => {
-          if (feedback.class) {
-            ratedClassIds.add(feedback.class);
-            feedbacksByClass[feedback.class] = feedback;
-          }
-        });
-      }
-
-      setRatedClasses(ratedClassIds);
-      setUserFeedbacks(feedbacksByClass);
-    } catch (error) {
-      console.error("Lỗi khi tải dữ liệu đánh giá:", error);
     }
   };
 
@@ -280,81 +238,7 @@ export default function UserClasses() {
     return Math.max(0, totalSessions - currentSession);
   };
 
-  // Feedback handling functions
-  const handleOpenFeedback = (enrollment) => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    // Allow both regular users and admins to write feedback
-    if (!user.role || (user.role !== 'user' && user.role !== 'admin')) {
-      toast.info('Bạn không có quyền viết đánh giá');
-      return;
-    }
-
-    setSelectedClassForFeedback(enrollment.class);
-    setShowFeedbackModal(true);
-  };
-
-  const handleCloseFeedback = () => {
-    setShowFeedbackModal(false);
-    setSelectedClassForFeedback(null);
-  };
-
-  const handleFeedbackSubmitted = () => {
-    // Store class info before clearing state
-    const classInfo = selectedClassForFeedback ? {
-      _id: selectedClassForFeedback._id,
-      className: selectedClassForFeedback.className
-    } : null;
-    
-    // Add the class to rated classes set
-    if (classInfo?._id) {
-      setRatedClasses(prev => new Set([...prev, classInfo._id]));
-    }
-    
-    // Close the feedback modal first
-    setShowFeedbackModal(false);
-    setSelectedClassForFeedback(null);
-    
-    // Show success message
-    toast.success('Đánh giá đã được gửi thành công! Đang chuyển đến trang đánh giá...');
-    
-    // Refresh feedback data and navigate to feedback page
-    setTimeout(() => {
-      fetchUserRatedClasses();
-      
-      if (classInfo) {
-        // Navigate to feedback page with "Tất cả đánh giá" tab (showMyFeedback: false)
-        navigate('/feedback', { 
-          state: { 
-            classId: classInfo._id, 
-            className: classInfo.className,
-            filterByClass: true,
-            showMyFeedback: false // Chuyển sang tab "Tất cả đánh giá"
-          } 
-        });
-      } else {
-        // Fallback navigation without specific class
-        navigate('/feedback');
-      }
-    }, 1500);
-  };
-
-  const handleViewFeedback = (enrollment) => {
-    const feedback = userFeedbacks[enrollment.class._id];
-    if (feedback) {
-      setSelectedFeedbackToView(feedback);
-      setSelectedClassForFeedback(enrollment.class); // Thêm dòng này để truyền thông tin class
-      setShowViewFeedbackModal(true);
-    }
-  };
-
-  const handleCloseViewFeedback = () => {
-    setShowViewFeedbackModal(false);
-    setSelectedFeedbackToView(null);
-    setSelectedClassForFeedback(null); // Reset class data khi đóng modal
-  };
-
-  // Filter enrollments for main/current and history view
+  // Filter enrollments
   const filteredEnrollments = enrollments.filter((enrollment) => {
     const matchesSearch =
       enrollment.class?.className
@@ -369,19 +253,17 @@ export default function UserClasses() {
 
     if (!matchesSearch) return false;
 
-    // Main view: exclude completed classes
-    if (!showHistory) {
-      if (enrollment.class?.status === "completed") return false;
-      if (filterStatus === "all") return true;
-      if (filterStatus === "paid") return enrollment.paymentStatus && enrollment.class?.status !== "completed";
-      if (filterStatus === "pending") return !enrollment.paymentStatus && enrollment.class?.status !== "completed";
-      if (filterStatus === "ongoing") return enrollment.class?.status === "ongoing";
-      if (filterStatus === "upcoming") return enrollment.class?.status === "upcoming";
-      return true;
-    } else {
-      // History view: only completed classes
+    if (filterStatus === "all") return true;
+    if (filterStatus === "paid") return enrollment.paymentStatus;
+    if (filterStatus === "pending") return !enrollment.paymentStatus;
+    if (filterStatus === "ongoing")
+      return enrollment.class?.status === "ongoing";
+    if (filterStatus === "completed")
       return enrollment.class?.status === "completed";
-    }
+    if (filterStatus === "upcoming")
+      return enrollment.class?.status === "upcoming";
+
+    return true;
   });
 
   // Statistics
@@ -438,26 +320,33 @@ export default function UserClasses() {
                   </div>
                   <div>
                     <h1 className="text-3xl md:text-4xl font-bold vintage-heading text-vintage-dark mb-2">
-                      {showHistory ? "Lịch Sử Lớp Học" : "Lịch Học Của Tôi"}
+                      Lịch Học Của Tôi
                     </h1>
                     <p className="text-vintage-neutral vintage-serif">
-                      {showHistory
-                        ? "Danh sách các lớp học bạn đã hoàn thành."
-                        : "Theo dõi tiến độ và quản lý các lớp học bạn đã đăng ký"}
+                      Theo dõi tiến độ và quản lý các lớp học bạn đã đăng ký
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2 mt-4 md:mt-0">
+              <div className="flex items-center space-x-3">
                 <button
-                  className={`px-5 py-2 rounded-lg font-medium transition-all duration-200 border border-vintage-gold/40 shadow-soft ${
-                    showHistory
-                      ? "bg-vintage-gold text-white hover:bg-vintage-gold/90"
-                      : "bg-white text-vintage-gold hover:bg-vintage-gold/10"
-                  }`}
-                  onClick={() => setShowHistory((prev) => !prev)}
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="flex items-center px-4 py-2 bg-vintage-warm border border-vintage-primary/20 rounded-xl hover:bg-vintage-primary hover:text-white transition-all duration-300 group"
                 >
-                  {showHistory ? "Quay lại lớp hiện tại" : "Xem lịch sử lớp học"}
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${
+                      refreshing ? "animate-spin" : ""
+                    } group-hover:text-white`}
+                  />
+                  Làm mới
+                </button>
+                <button
+                  onClick={() => navigate("/classes")}
+                  className="flex items-center px-6 py-2 bg-gradient-luxury text-white rounded-xl hover:shadow-golden transition-all duration-300 group"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Đăng ký thêm
                 </button>
               </div>
             </div>
@@ -465,7 +354,70 @@ export default function UserClasses() {
         </motion.div>
 
         {/* Enhanced Statistics */}
-       
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"
+        >
+          {[
+            {
+              icon: BarChart3,
+              value: stats.total,
+              label: "Tổng lớp học",
+              color: "blue",
+            },
+            {
+              icon: CheckCircle,
+              value: stats.paid,
+              label: "Đã thanh toán",
+              color: "green",
+            },
+            {
+              icon: AlertTriangle,
+              value: stats.pending,
+              label: "Chờ thanh toán",
+              color: "amber",
+            },
+            {
+              icon: TrendingUp,
+              value: stats.ongoing,
+              label: "Đang học",
+              color: "indigo",
+            },
+            {
+              icon: Award,
+              value: stats.completed,
+              label: "Hoàn thành",
+              color: "purple",
+            },
+          ].map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <motion.div
+                key={index}
+                whileHover={{ y: -5, scale: 1.02 }}
+                className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-soft border border-vintage-gold/10 hover:shadow-golden transition-all duration-300"
+              >
+                <div className="flex items-center">
+                  <div
+                    className={`w-12 h-12 bg-${stat.color}-100 rounded-xl flex items-center justify-center mr-3`}
+                  >
+                    <IconComponent
+                      className={`h-6 w-6 text-${stat.color}-600`}
+                    />
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold vintage-heading text-vintage-dark">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-vintage-neutral vintage-sans">
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
 
         {/* Enhanced Filters */}
         <motion.div variants={itemVariants} className="mb-6">
@@ -664,45 +616,16 @@ export default function UserClasses() {
                           Xem chi tiết
                         </button>
 
-                        <div className="flex items-center gap-2">
-                          {/* Feedback button logic for completed classes in history view */}
-                          {enrollment.class?.status === 'completed' && (
-                            ratedClasses.has(enrollment.class._id) ? (
-                              <div className="flex items-center gap-2">
-                                <span className="flex items-center text-green-600 font-medium text-sm vintage-sans">
-                                  <Star className="h-4 w-4 mr-1 fill-current" />
-                                  Đã đánh giá
-                                </span>
-                                <button
-                                  onClick={() => handleViewFeedback(enrollment)}
-                                  className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm vintage-sans transition-colors"
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Xem đánh giá
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenFeedback(enrollment)}
-                                className="flex items-center text-amber-600 hover:text-amber-700 font-medium text-sm vintage-sans transition-colors"
-                              >
-                                <Star className="h-4 w-4 mr-1" />
-                                Đánh giá
-                              </button>
-                            )
-                          )}
-                          
-                          <button
-                            onClick={() => {
-                              setSelectedEnrollment(enrollment);
-                              setShowDetailModal(true);
-                            }}
-                            className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm vintage-sans transition-colors"
-                          >
-                            <BarChart3 className="h-4 w-4 mr-1" />
-                            Thống kê
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => {
+                            setSelectedEnrollment(enrollment);
+                            setShowDetailModal(true);
+                          }}
+                          className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm vintage-sans transition-colors"
+                        >
+                          <BarChart3 className="h-4 w-4 mr-1" />
+                          Thống kê
+                        </button>
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -824,22 +747,6 @@ export default function UserClasses() {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Feedback Modal */}
-        <ClassFeedbackModal
-          isOpen={showFeedbackModal}
-          onClose={handleCloseFeedback}
-          classData={selectedClassForFeedback}
-          onSubmitted={handleFeedbackSubmitted}
-        />
-
-        {/* View Feedback Modal */}
-        <ViewFeedbackModal
-          isOpen={showViewFeedbackModal}
-          onClose={handleCloseViewFeedback}
-          feedback={selectedFeedbackToView}
-          classData={selectedClassForFeedback}
-        />
       </div>
     </motion.div>
   );

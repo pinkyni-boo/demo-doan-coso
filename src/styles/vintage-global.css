@@ -489,26 +489,13 @@ header[class*="fixed"] {
 
 /* Content padding để tránh navbar che */
 .content-with-navbar {
-  padding-top: 64px !important;
-}
-
-/* Main content global fix */
-.main-content {
-  min-height: calc(100vh - 64px);
-  width: 100%;
-  overflow-x: hidden;
+  padding-top: 80px !important;
 }
 
 /* Hero section không bị che */
 .vintage-hero {
-  margin-top: -64px;
-  padding-top: 64px;
-  position: relative;
-  z-index: 1;
-}
-
-/* Ensure all pages have proper spacing */
-.main-content > * {
+  margin-top: -80px;
+  padding-top: 80px;
   position: relative;
   z-index: 1;
 }
