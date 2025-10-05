@@ -133,7 +133,7 @@ export default function TrainerManagement() {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
-        // Hiển thị thông báo cập nhật thành công
+       
         if (response.data.message) {
           alert(response.data.message);
         } else if (response.data.warning) {
