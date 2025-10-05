@@ -15,7 +15,6 @@ import {
   updatePaymentStatus,
   deleteEnrollment,
   deletePaymentEnrollment, // Thêm dòng này
-  getPaymentStats,
 } from "../controllers/paymentController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -30,7 +29,6 @@ router.get("/all", verifyToken, verifyAdmin, getAllPayments);
 router.get("/pending", verifyToken, verifyAdmin, getPendingPayments);
 router.get("/rejected", verifyToken, verifyAdmin, getRejectedPayments);
 router.get("/completed", verifyToken, verifyAdmin, getCompletedPayments);
-router.get("/stats", verifyToken, verifyAdmin, getPaymentStats);
 
 // Get user's payments with fixed paths
 router.get("/user", verifyToken, getPayments);

@@ -37,7 +37,6 @@ import TrainerClassDetail from "./components/Trainer/ClassDetail";
 import AttendanceFlow from "./components/Trainer/AttendanceFlow";
 import TrainerIssueReport from "./components/Trainer/TrainerIssueReport";
 import NotificationToast from "./components/Common/NotificationToast";
-import PersonalSchedule from './components/Schedule';
 
 import "./styles/vintage-global.css";
 import axios from "axios";
@@ -106,19 +105,10 @@ function App({ appName }) {
         <ScrollToTop />
         <div className="app-container">
           <NavBar user={user} setUser={setUser} />
-          <main className="pt-16 main-content content-with-navbar">
+          <main className="pt-16 main-content">
             <Routes>
-              {/* Home route - có hero section cần full screen */}
-              <Route 
-                path="/" 
-                element={
-                  <div className="-mt-16">
-                    <HomePage />
-                  </div>
-                } 
-              />
-              
-              {/* Các routes khác */}
+              {/* Main routes */}
+              <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<Login setUser={setUser} />} />
               <Route path="/sign-up" element={<SignUp />} />
               <Route path="/club" element={<Club />} />
@@ -132,7 +122,7 @@ function App({ appName }) {
               <Route path="/classes" element={<ViewClasses />} />
               <Route path="/my-classes" element={<UserClasses />} />
               <Route path="/classes/:id/details" element={<ClassDetails />} />
-              <Route path="/schedule" element={<PersonalSchedule />} />
+
               {/* Feedback routes */}
               <Route path="/feedback" element={<FeedbackPage />} />
               <Route path="/feedback/club/:clubId" element={<FeedbackPage />} />
@@ -158,13 +148,34 @@ function App({ appName }) {
                 element={<TrainerIssueReport />}
               />
 
-              {/* Admin routes - sử dụng dashboard */}
+              {/* Admin routes - tất cả qua dashboard */}
               <Route
                 path="/admin/*"
                 element={
-                  <Routes>
-                    <Route path="*" element={<AdminDashboard />} />
-                  </Routes>
+                  <AdminLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="users" element={<AdminDashboard />} />
+                      <Route path="classes" element={<AdminDashboard />} />
+                      <Route path="attendance" element={<AdminDashboard />} />
+                      <Route path="payments" element={<AdminDashboard />} />
+                      <Route path="memberships" element={<AdminDashboard />} />
+                      <Route path="services" element={<AdminDashboard />} />
+                      <Route path="clubs" element={<AdminDashboard />} />
+                      <Route path="images" element={<AdminDashboard />} />
+                      <Route path="stats" element={<AdminDashboard />} />
+                      <Route path="equipment" element={<AdminDashboard />} />
+                      <Route path="trainers" element={<TrainerManagement />} />
+                      <Route
+                        path="schedule-requests"
+                        element={<AdminScheduleRequests />}
+                      />
+                      <Route
+                        path=""
+                        element={<Navigate to="dashboard" replace />}
+                      />
+                    </Routes>
+                  </AdminLayout>
                 }
               />
 

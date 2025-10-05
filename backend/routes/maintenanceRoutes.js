@@ -8,16 +8,13 @@ import {
   getOverdueMaintenance,
   getMaintenanceReport,
   getMaintenanceSchedulesForTrainer,
-  checkMaintenanceConflicts,
 } from "../controllers/maintenanceController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Public routes for trainers and users - Xem lịch bảo trì
+// Public routes for trainers - Xem lịch bảo trì
 router.get("/trainer", verifyToken, getMaintenanceSchedulesForTrainer); // Trainer xem lịch bảo trì
-router.get("/user", verifyToken, getMaintenanceSchedulesForTrainer); // User cũng có thể xem lịch bảo trì
-router.get("/check-conflicts", verifyToken, checkMaintenanceConflicts); // Kiểm tra xung đột bảo trì
 
 // Admin routes - Quản lý lịch bảo trì
 router.get("/", verifyToken, verifyAdmin, getAllMaintenanceSchedules); // Lấy danh sách lịch bảo trì

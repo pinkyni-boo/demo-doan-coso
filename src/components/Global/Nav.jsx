@@ -20,13 +20,12 @@ export default function NavBar({ user, setUser }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState({});
-  const [dropdownTimeout, setDropdownTimeout] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0); // State để nhận từ NotificationCenter
   const location = useLocation();
   const navigate = useNavigate();
 
   // Hook quản lý notifications
-  const { unreadCount } = useNotifications();
+  const { unreadCount: hookUnreadCount } = useNotifications();
 
   // Show notification button for all logged in users
   const showNotifications = !!user; // Show for all logged in users
@@ -150,18 +149,14 @@ export default function NavBar({ user, setUser }) {
   const authenticatedNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
-    { name: "Lớp học", 
-      dropdown: [
-      { name: "Lớp của tôi", path: "/my-classes" },
-      { name: "Đăng ký lớp", path: "/classes" },
-      ],
-     },
-    { name: "Lịch tập", path: "/schedule" },
+    { name: "Lớp học", path: "/classes" },
+    { name: "Lịch của tôi", path: "/my-classes" },
     { name: "Đánh giá", path: "/feedback" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
   ];
 
+  // Menu cho trainer (bỏ membership và payment)
   const trainerNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
@@ -170,28 +165,9 @@ export default function NavBar({ user, setUser }) {
     { name: "Báo cáo vấn đề", path: "/trainer/issue-report" },
   ];
 
-  // Menu cho admin - có tất cả chức năng user + trainer + admin
-  const adminNavLinks = [
-    { name: "CLB", path: "/club" },
-    { name: "Dịch vụ", path: "/services" },
-    { name: "Lớp học", 
-      dropdown: [
-      { name: "Lớp của tôi", path: "/my-classes" },
-      { name: "Đăng ký lớp", path: "/classes" },
-      ],
-     },
-    { name: "Lịch tập", path: "/schedule" },
-    { name: "Đánh giá", path: "/feedback" },
-    { name: "Thẻ thành viên", path: "/membership" },
-    { name: "Thanh toán", path: "/payment" },
-    
-  ];
-
   // Chọn menu dựa trên role và trạng thái đăng nhập
   const navLinks = user
-    ? user.role === "admin"
-      ? adminNavLinks
-      : user.role === "trainer"
+    ? user.role === "trainer"
       ? trainerNavLinks
       : authenticatedNavLinks
     : publicNavLinks;
@@ -235,117 +211,26 @@ export default function NavBar({ user, setUser }) {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 mx-6">
               {navLinks.map((link) => (
-                <div key={link.name} className="relative">
-                  {link.dropdown ? (
-                    // Dropdown menu item with improved interaction
-                    <div
-                      className="relative"
-                      onMouseEnter={() => {
-                        if (dropdownTimeout) {
-                          clearTimeout(dropdownTimeout);
-                          setDropdownTimeout(null);
-                        }
-                        setDropdownOpen({ ...dropdownOpen, [link.name]: true });
-                      }}
-                      onMouseLeave={() => {
-                        const timeout = setTimeout(() => {
-                          setDropdownOpen({ ...dropdownOpen, [link.name]: false });
-                        }, 300); // 300ms delay before closing
-                        setDropdownTimeout(timeout);
-                      }}
-                    >
-                      <button
-                        className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base flex items-center ${
-                          link.dropdown.some(item => isActive(item.path))
-                            ? isScrolled
-                              ? "text-amber-700 bg-amber-50"
-                              : "text-amber-100 bg-white/15 shadow-lg"
-                            : isScrolled
-                            ? "text-stone-600 hover:text-amber-700 hover:bg-amber-50"
-                            : "text-white/90 hover:text-white hover:bg-white/10"
-                        }`}
-                      >
-                        {link.name}
-                        <svg
-                          className={`ml-1 w-4 h-4 transition-transform duration-200 ${
-                            dropdownOpen[link.name] ? "rotate-180" : ""
-                          }`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-
-                      {/* Dropdown Menu with improved usability */}
-                      {dropdownOpen[link.name] && (
-                        <div 
-                          className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-2xl border border-amber-200/50 z-50 overflow-hidden backdrop-blur-sm"
-                          onMouseEnter={() => {
-                            if (dropdownTimeout) {
-                              clearTimeout(dropdownTimeout);
-                              setDropdownTimeout(null);
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            const timeout = setTimeout(() => {
-                              setDropdownOpen({ ...dropdownOpen, [link.name]: false });
-                            }, 200);
-                            setDropdownTimeout(timeout);
-                          }}
-                        >
-                          {link.dropdown.map((dropdownItem) => (
-                            <Link
-                              key={dropdownItem.name}
-                              to={dropdownItem.path}
-                              className={`block px-5 py-4 vintage-sans text-sm transition-colors duration-200 hover:scale-[1.02] transform ${
-                                isActive(dropdownItem.path)
-                                  ? "bg-amber-50 text-amber-700 font-semibold border-l-4 border-amber-500"
-                                  : "text-stone-700 hover:bg-amber-50 hover:text-amber-700 hover:pl-6"
-                              }`}
-                              onClick={() => {
-                                setDropdownOpen({});
-                                if (dropdownTimeout) {
-                                  clearTimeout(dropdownTimeout);
-                                  setDropdownTimeout(null);
-                                }
-                              }}
-                            >
-                              {dropdownItem.name}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    // Regular menu item
-                    <Link
-                      to={link.path}
-                      className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base ${
-                        isActive(link.path)
-                          ? isScrolled
-                            ? "text-amber-700 bg-amber-50"
-                            : "text-amber-100 bg-white/15 shadow-lg"
-                          : isScrolled
-                          ? "text-stone-600 hover:text-amber-700 hover:bg-amber-50"
-                          : "text-white/90 hover:text-white hover:bg-white/10"
-                      }`}
-                    >
-                      {link.name}
-                      <span
-                        className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-amber-600 transition-all duration-300 group-hover:w-3/4 ${
-                          isActive(link.path) ? "w-3/4" : ""
-                        }`}
-                      ></span>
-                    </Link>
-                  )}
-                </div>
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base ${
+                    isActive(link.path)
+                      ? isScrolled
+                        ? "text-amber-700 bg-amber-50"
+                        : "text-amber-100 bg-white/15 shadow-lg"
+                      : isScrolled
+                      ? "text-stone-600 hover:text-amber-700 hover:bg-amber-50"
+                      : "text-white/90 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {link.name}
+                  <span
+                    className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-amber-600 transition-all duration-300 group-hover:w-3/4 ${
+                      isActive(link.path) ? "w-3/4" : ""
+                    }`}
+                  ></span>
+                </Link>
               ))}
             </nav>
 
@@ -374,9 +259,9 @@ export default function NavBar({ user, setUser }) {
                           style={{ display: "block" }}
                         />
 
-                        {unreadCount > 0 && (
+                        {(unreadCount || 0) > 0 && (
                           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
-                            {unreadCount > 99 ? "99+" : unreadCount}
+                            {(unreadCount || 0) > 99 ? "99+" : unreadCount || 0}
                           </span>
                         )}
                       </button>
@@ -387,7 +272,7 @@ export default function NavBar({ user, setUser }) {
                           isOpen={notificationOpen}
                           onClose={() => setNotificationOpen(false)}
                           userRole={user?.role || "user"}
-                          // XÓA prop này nếu có: onUnreadCountChange={setUnreadCount}
+                          onUnreadCountChange={setUnreadCount}
                         />
                       </div>
                     </div>
@@ -572,76 +457,18 @@ export default function NavBar({ user, setUser }) {
           <div className="mobile-menu lg:hidden bg-white shadow-2xl border-t border-amber-200/50">
             <div className="px-4 py-6 space-y-2">
               {navLinks.map((link) => (
-                <div key={link.name}>
-                  {link.dropdown ? (
-                    // Mobile dropdown
-                    <div>
-                      <button
-                        onClick={() => setDropdownOpen({ 
-                          ...dropdownOpen, 
-                          [link.name]: !dropdownOpen[link.name] 
-                        })}
-                        className={`flex items-center justify-between w-full px-4 py-3 rounded-lg vintage-sans font-medium transition-colors duration-200 ${
-                          link.dropdown.some(item => isActive(item.path))
-                            ? "bg-amber-50 text-amber-700"
-                            : "text-stone-800 hover:bg-amber-50 hover:text-amber-700"
-                        }`}
-                      >
-                        {link.name}
-                        <svg
-                          className={`w-4 h-4 transition-transform duration-200 ${
-                            dropdownOpen[link.name] ? "rotate-180" : ""
-                          }`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-                      
-                      {dropdownOpen[link.name] && (
-                        <div className="ml-4 mt-2 space-y-1">
-                          {link.dropdown.map((dropdownItem) => (
-                            <Link
-                              key={dropdownItem.name}
-                              to={dropdownItem.path}
-                              className={`block px-4 py-2 rounded-lg vintage-sans text-sm transition-colors duration-200 ${
-                                isActive(dropdownItem.path)
-                                  ? "bg-amber-100 text-amber-700 font-semibold"
-                                  : "text-stone-600 hover:bg-amber-50 hover:text-amber-700"
-                              }`}
-                              onClick={() => {
-                                setMobileMenuOpen(false);
-                                setDropdownOpen({});
-                              }}
-                            >
-                              {dropdownItem.name}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    // Regular mobile menu item
-                    <Link
-                      to={link.path}
-                      className={`block px-4 py-3 rounded-lg vintage-sans font-medium transition-colors duration-200 ${
-                        isActive(link.path)
-                          ? "bg-amber-50 text-amber-700"
-                          : "text-stone-800 hover:bg-amber-50 hover:text-amber-700"
-                      }`}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {link.name}
-                    </Link>
-                  )}
-                </div>
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className={`block px-4 py-3 rounded-lg vintage-sans font-medium transition-colors duration-200 ${
+                    isActive(link.path)
+                      ? "bg-amber-50 text-amber-700"
+                      : "text-stone-800 hover:bg-amber-50 hover:text-amber-700"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {link.name}
+                </Link>
               ))}
 
               {/* Mobile User Menu */}
