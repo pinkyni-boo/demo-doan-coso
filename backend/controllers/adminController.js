@@ -1,6 +1,7 @@
 import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
 import Class from "../models/Class.js";
 import User from "../models/User.js";
+import Payment from "../models/Payment.js";
 import NotificationService from "../services/NotificationService.js";
 import mongoose from "mongoose";
 
@@ -283,6 +284,147 @@ export const addMakeupSchedule = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi server khi thêm lịch dạy bù"
+    });
+  }
+};
+
+// Lấy danh sách tất cả trainer cho admin
+export const getAllTrainers = async (req, res) => {
+  try {
+    const trainers = await User.find({ role: "trainer" })
+      .select("fullName email phone gender status createdAt")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      trainers
+    });
+  } catch (error) {
+    console.error("Error fetching trainers:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách trainer"
+    });
+  }
+};
+
+// Lấy lịch dạy của một trainer cụ thể
+export const getTrainerSchedule = async (req, res) => {
+  try {
+    const { trainerId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(trainerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID trainer không hợp lệ"
+      });
+    }
+
+    // Kiểm tra trainer có tồn tại không
+    const trainer = await User.findOne({ 
+      _id: trainerId, 
+      role: "trainer" 
+    }).select("fullName email");
+
+    if (!trainer) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy trainer"
+      });
+    }
+
+    // Lấy các lớp học của trainer
+    const classes = await Class.find({ trainerId })
+      .populate("roomId", "name")
+      .select("className serviceName location schedule startDate endDate currentStudents maxStudents roomId")
+      .sort({ startDate: 1 });
+
+    res.json({
+      success: true,
+      trainer,
+      classes
+    });
+  } catch (error) {
+    console.error("Error fetching trainer schedule:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy lịch dạy"
+    });
+  }
+};
+
+// Lấy thống kê dashboard cho admin
+export const getDashboardStats = async (req, res) => {
+  try {
+    // Lấy số liệu tổng quan - đếm tất cả tài khoản trong hệ thống
+    const [totalAccountsCount, trainerCount, classCount, revenueData] = await Promise.all([
+      User.countDocuments(), // Đếm tất cả tài khoản (user, trainer, admin)
+      User.countDocuments({ role: "trainer" }),
+      Class.countDocuments(),
+      Payment.aggregate([
+        { $match: { status: "approved" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+      ])
+    ]);
+
+    const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers: totalAccountsCount, // Tổng số tài khoản trong website
+        totalTrainers: trainerCount,
+        totalClasses: classCount,
+        totalRevenue: totalRevenue
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy thống kê dashboard"
+    });
+  }
+};
+
+// Lấy tất cả users cho admin
+export const getAllUsers = async (req, res) => {
+  try {
+    // Lấy tất cả tài khoản trong hệ thống (bao gồm user, trainer, admin)
+    const users = await User.find()
+      .select("fullName email phone role createdAt membership")
+      .populate("membership", "type status")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách users"
+    });
+  }
+};
+
+// Lấy tất cả classes cho admin
+export const getAllClasses = async (req, res) => {
+  try {
+    const classes = await Class.find()
+      .select("className serviceName location schedule startDate endDate currentMembers maxMembers status")
+      .sort({ startDate: -1 });
+
+    res.json({
+      success: true,
+      classes
+    });
+  } catch (error) {
+    console.error("Error fetching classes:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách classes"
     });
   }
 };

@@ -20,7 +20,7 @@ export const getAssignedClasses = async (req, res) => {
       });
     }
 
-    // Tìm các lớp học có instructorName trùng với fullName của user
+    // Tìm các lớp học có instructorName trùng với fullName của user (bao gồm admin)
     const classes = await Class.find({ 
       instructorName: user.fullName 
     }).populate('service', 'serviceName');
@@ -41,7 +41,10 @@ export const getAssignedClasses = async (req, res) => {
         endDate: classItem.endDate,
         status: classItem.status || 'ongoing',
         description: classItem.description
-      }))
+      })),
+      message: user.role === 'admin' 
+        ? `Admin ${user.fullName} - Lớp học được gán: ${classes.length}` 
+        : `Trainer ${user.fullName} - Lớp học được gán: ${classes.length}`
     });
   } catch (error) {
     console.error('Error fetching assigned classes:', error);
@@ -84,11 +87,18 @@ export const getClassDetail = async (req, res) => {
       });
     }
 
-    const classItem = await Class.findOne({ 
-      _id: classId, 
-      instructorName: user.fullName 
-    })
-    .populate('service', 'serviceName');
+    let classItem;
+    
+    // Nếu là admin, cho phép xem bất kỳ lớp học nào
+    if (user.role === "admin") {
+      classItem = await Class.findById(classId).populate('service', 'serviceName');
+    } else {
+      // Trainer thông thường chỉ xem lớp của mình
+      classItem = await Class.findOne({ 
+        _id: classId, 
+        instructorName: user.fullName 
+      }).populate('service', 'serviceName');
+    }
     
     if (!classItem) {
       return res.status(404).json({
