@@ -8,120 +8,116 @@ import mongoose from "mongoose";
 // Tạo feedback mới
 export const createFeedback = async (req, res) => {
   try {
-    console.log("=== CREATE FEEDBACK REQUEST ===");
-    console.log("User ID:", req.user._id);
-    console.log("Request body:", req.body);
-
-    const userId = req.user._id;
     const {
-      feedbackType,
-      overallRating,
-      ratings,
       title,
       content,
-      type,
-      tags,
-      isAnonymous,
+      ratings,
+      feedbackType,
+      class: classId,
+      trainer: trainerId,
+      pros,
+      cons,
       wouldRecommend,
+      usageFrequency,
+      tags,
       images,
-      clubId,
-      classId,
-      serviceId,
-      trainerId,
+      isAnonymous,
     } = req.body;
 
-    console.log("Extracted data:", {
-      feedbackType,
-      overallRating,
-      title,
-      content,
-      clubId,
-    });
+    const userId = req.user.id;
 
-    // Validate required fields
-    if (!feedbackType || !overallRating || !title || !content) {
-      console.log("Validation failed - missing required fields");
+    // Validation
+    if (!title || !content || !feedbackType) {
       return res.status(400).json({
         success: false,
-        message: "Vui lòng điền đầy đủ thông tin bắt buộc",
+        message: "Tiêu đề, nội dung và loại đánh giá là bắt buộc",
       });
     }
 
-    // Validate trainer selection for trainer feedback
-    if (feedbackType === "trainer" && !trainerId) {
-      console.log("Validation failed - trainer feedback without trainerId");
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng chọn huấn luyện viên để đánh giá",
+    // Check if user already submitted feedback for this class/trainer
+    let existingFeedback;
+    if (feedbackType === "class" && classId) {
+      existingFeedback = await Feedback.findOne({
+        user: userId,
+        class: classId,
+        feedbackType: "class",
+      });
+    } else if (feedbackType === "trainer" && trainerId) {
+      existingFeedback = await Feedback.findOne({
+        user: userId,
+        trainer: trainerId,
+        feedbackType: "trainer",
       });
     }
 
-    // Tạo feedback mới
-    console.log("Creating new feedback with data:", {
-      user: userId,
-      feedbackType,
-      overallRating,
-      ratings: ratings || {},
-      title,
-      content,
-      type: type || "general",
-      tags: tags || [],
-      isAnonymous: isAnonymous || false,
-      wouldRecommend: wouldRecommend !== undefined ? wouldRecommend : true,
-      images: images || [],
-      clubId,
-      classId,
-      serviceId,
-    });
+    if (existingFeedback) {
+      return res.status(400).json({
+        success: false,
+        message: "Bạn đã đánh giá trước đó rồi",
+      });
+    }
 
+    // Calculate overall rating
+    let overallRating = 0;
+    if (ratings && typeof ratings === "object") {
+      const ratingValues = Object.values(ratings).filter(
+        (val) => typeof val === "number"
+      );
+      if (ratingValues.length > 0) {
+        overallRating =
+          ratingValues.reduce((sum, val) => sum + val, 0) / ratingValues.length;
+      }
+    }
+
+    // Create new feedback với status tự động approved
     const newFeedback = new Feedback({
       user: userId,
-      feedbackType,
-      overallRating,
-      ratings: ratings || {},
       title,
       content,
-      type: type || "general",
+      ratings: ratings || {},
+      overallRating: Math.round(overallRating * 10) / 10,
+      feedbackType,
+      class: feedbackType === "class" ? classId : undefined,
+      trainer: feedbackType === "trainer" ? trainerId : undefined,
+      pros: pros || [],
+      cons: cons || [],
+      wouldRecommend: wouldRecommend || false,
+      usageFrequency: usageFrequency || "monthly",
       tags: tags || [],
-      isAnonymous: isAnonymous || false,
-      wouldRecommend: wouldRecommend !== undefined ? wouldRecommend : true,
       images: images || [],
-      // Thêm các trường liên quan nếu có trong model
-      ...(clubId && { club: clubId }),
-      ...(classId && { class: classId }),
-      ...(serviceId && { service: serviceId }),
-      ...(trainerId && { trainer: trainerId }),
+      isAnonymous: isAnonymous || false,
+      status: "approved", // 🔥 TỰ ĐỘNG PHÊ DUYỆT
+      isPublic: true,     // 🔥 TỰ ĐỘNG CÔNG KHAI
     });
 
-    console.log("Saving feedback to database...");
     const savedFeedback = await newFeedback.save();
-    console.log("Feedback saved successfully:", savedFeedback._id);
 
-    // Populate thông tin liên quan
-    console.log("Populating feedback data...");
-    const populatedFeedback = await Feedback.findById(savedFeedback._id)
-      .populate("user", "username fullName avatar")
-      .populate("club", "name")
-      .populate("class", "name")
-      .populate("service", "name")
-      .populate("trainer", "username fullName avatar");
+    // Populate user và class/trainer info
+    await savedFeedback.populate([
+      {
+        path: "user",
+        select: "username fullName",
+      },
+      {
+        path: "class",
+        select: "className serviceName",
+      },
+      {
+        path: "trainer",
+        select: "fullName username",
+      },
+    ]);
 
-    console.log("Sending success response...");
     res.status(201).json({
       success: true,
-      message: "Tạo feedback thành công",
-      data: populatedFeedback,
+      message: "Đánh giá đã được tạo và phê duyệt thành công",
+      data: savedFeedback,
     });
   } catch (error) {
-    console.error("=== ERROR CREATING FEEDBACK ===");
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
-    console.error("Request body:", req.body);
-    console.error("User ID:", req.user?._id);
-
+    console.error("Error creating feedback:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi khi tạo feedback",
+      message: "Lỗi server khi tạo đánh giá",
       error: error.message,
     });
   }

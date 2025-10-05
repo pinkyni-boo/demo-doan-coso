@@ -338,6 +338,7 @@ export const changePassword = async (req, res) => {
 // Lấy danh sách tất cả users (cho admin)
 export const getAllUsers = async (req, res) => {
   try {
+    // Lấy tất cả users bao gồm admin để admin có thể test như user
     const users = await User.find().select("-password").sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
@@ -445,8 +446,14 @@ export const getTrainers = async (req, res) => {
     console.log("=== GET TRAINERS API CALLED ===");
     console.log("User making request:", req.user?._id);
 
-    const trainers = await User.find({ role: "trainer" })
-      .select("_id username fullName email avatar")
+    // Lấy cả trainer và admin để admin có thể test như trainer
+    const trainers = await User.find({ 
+      $or: [
+        { role: "trainer" },
+        { role: "admin" }
+      ]
+    })
+      .select("_id username fullName email avatar role")
       .sort({ fullName: 1 });
 
     console.log("Trainers found in database:", trainers.length);

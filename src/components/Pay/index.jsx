@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 
 export default function PaymentPage() {
+  console.log('💳 PaymentPage component mounted');
+  
   const navigate = useNavigate();
   const location = useLocation();
   const [userData, setUserData] = useState({ name: "", email: "", phone: "" });
@@ -39,6 +41,10 @@ export default function PaymentPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingClassId, setDeletingClassId] = useState(null);
   const [deleteError, setDeleteError] = useState("");
+  
+  // Add state for single class enrollment from navigation
+  const [singleClassPayment, setSingleClassPayment] = useState(null);
+  const [isFromClassPage, setIsFromClassPage] = useState(false);
 
   // Add custom styling cho navbar khi vào trang Payment
   useEffect(() => {
@@ -65,6 +71,28 @@ export default function PaymentPage() {
 
   // Check if we have a pending membership payment
   useEffect(() => {
+    // Check for class data from navigation state first
+    console.log('🔍 Payment page - checking location state:', location.state);
+    
+    if (location.state?.classData && location.state?.enrollmentType === "class") {
+      console.log('✅ Received class data from navigation:', location.state.classData);
+      setIsFromClassPage(true);
+      const classData = location.state.classData;
+      setSingleClassPayment({
+        classId: classData._id,
+        name: classData.className,
+        price: classData.fee || classData.price || 0,
+        serviceName: classData.serviceName,
+        instructorName: classData.instructorName,
+        schedule: classData.schedule,
+        description: location.state.description || `Đăng ký lớp học: ${classData.className}`,
+        amount: location.state.amount || classData.fee || classData.price || 0
+      });
+      console.log('💳 Single class payment set up');
+      return;
+    }
+
+    console.log('📝 No class data, checking for membership data...');
     const pendingMembershipString = localStorage.getItem("pendingMembership");
     if (pendingMembershipString) {
       try {
@@ -127,6 +155,45 @@ export default function PaymentPage() {
         return;
       }
 
+      // If we're coming from class page with single class, just fetch user data
+      if (isFromClassPage && singleClassPayment) {
+        const userRes = await fetch(`http://localhost:5000/api/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const userInfo = await userRes.json();
+
+        if (!userRes.ok) throw new Error("User API error");
+
+        setUserData({
+          name: userInfo.username,
+          email: userInfo.email,
+          phone: userInfo.phone || "",
+        });
+
+        // Set the single class as the only class to pay for
+        setRegisteredClasses([
+          {
+            id: `temp-${singleClassPayment.classId}`, // Temporary ID for UI
+            classId: singleClassPayment.classId,
+            name: singleClassPayment.name,
+            price: singleClassPayment.price,
+            serviceName: singleClassPayment.serviceName,
+            instructorName: singleClassPayment.instructorName,
+            schedule: singleClassPayment.schedule,
+            isNewEnrollment: true // Flag to indicate this is a new enrollment
+          }
+        ]);
+
+        // Auto-select this class for payment
+        setSelectedClasses({
+          [`temp-${singleClassPayment.classId}`]: true
+        });
+
+        setLoading(false);
+        return;
+      }
+
       const [userRes, enrollmentRes] = await Promise.all([
         fetch(`http://localhost:5000/api/users/${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -173,7 +240,7 @@ export default function PaymentPage() {
 
   useEffect(() => {
     fetchUnpaidRegistrations();
-  }, [userId]);
+  }, [userId, isFromClassPage, singleClassPayment]);
 
   // Hàm xóa đăng ký lớp học
   const handleDeleteRegistration = async (enrollmentId) => {
@@ -321,9 +388,30 @@ export default function PaymentPage() {
 
   // Handle payment
   const handlePayment = () => {
+    console.log('🎯 Payment button clicked');
+    console.log('💳 Selected method:', selectedMethod);
+    console.log('📊 Is from class page:', isFromClassPage);
+    console.log('📋 Single class payment:', singleClassPayment);
+    
     if (!selectedMethod) {
-      alert("Vui lòng chọn phương thức thanh toán!");
+      alert("⚠️ Vui lòng chọn phương thức thanh toán!");
       return;
+    }
+
+    // Validate single class payment data
+    if (isFromClassPage) {
+      if (!singleClassPayment) {
+        alert("❌ Không tìm thấy thông tin lớp học để thanh toán!");
+        return;
+      }
+      if (!singleClassPayment.classId) {
+        alert("❌ Thiếu thông tin ID lớp học!");
+        return;
+      }
+      if (!singleClassPayment.amount || singleClassPayment.amount <= 0) {
+        alert("❌ Số tiền thanh toán không hợp lệ!");
+        return;
+      }
     }
 
     if (selectedMethod === "Thẻ ngân hàng") {
@@ -336,6 +424,7 @@ export default function PaymentPage() {
   // Handle direct payment
   const handleDirectPayment = async () => {
     try {
+      console.log('💳 Starting payment process...');
       const token = localStorage.getItem("token");
       if (!token) {
         alert("Bạn cần đăng nhập lại!");
@@ -343,6 +432,97 @@ export default function PaymentPage() {
         return;
       }
 
+      console.log('🔐 Token found, proceeding with payment...');
+
+      // Handle new class enrollment from class page
+      if (isFromClassPage && singleClassPayment) {
+        console.log('🎯 Processing single class payment:', singleClassPayment);
+        
+        // First enroll in the class
+        console.log('📝 Step 1: Enrolling in class...');
+        const enrollResponse = await fetch("http://localhost:5000/api/classes/enroll", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            classId: singleClassPayment.classId,
+          }),
+        });
+
+        console.log('📊 Enrollment response status:', enrollResponse.status);
+        
+        if (!enrollResponse.ok) {
+          const errorData = await enrollResponse.json();
+          console.error('❌ Enrollment failed:', errorData);
+          throw new Error(errorData.message || "Không thể đăng ký lớp học");
+        }
+
+        const enrollData = await enrollResponse.json();
+        console.log('✅ Enrollment created:', enrollData);
+
+        // Extract enrollment ID - handle different response structures
+        let enrollmentId;
+        if (enrollData.enrollment && enrollData.enrollment._id) {
+          enrollmentId = enrollData.enrollment._id;
+        } else if (enrollData._id) {
+          enrollmentId = enrollData._id;
+        } else if (enrollData.data && enrollData.data._id) {
+          enrollmentId = enrollData.data._id;
+        } else if (enrollData.id) {
+          enrollmentId = enrollData.id;
+        } else {
+          console.error('❌ Could not find enrollment ID in response:', enrollData);
+          console.log('📋 Available keys:', Object.keys(enrollData));
+          throw new Error("Không thể xác định ID đăng ký. Vui lòng thử lại.");
+        }
+
+        console.log('🆔 Using enrollment ID:', enrollmentId);
+
+        // Validate enrollment ID
+        if (!enrollmentId || enrollmentId.length !== 24) {
+          throw new Error("ID đăng ký không hợp lệ");
+        }
+
+        // Then create payment for the enrollment
+        console.log('💳 Step 2: Creating payment...');
+        const paymentPayload = {
+          amount: singleClassPayment.amount,
+          method: selectedMethod,
+          registrationIds: [enrollmentId],
+          status: "pending",
+          paymentType: "class",
+        };
+        
+        console.log('💰 Payment payload:', paymentPayload);
+
+        const paymentResponse = await fetch("http://localhost:5000/api/payments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(paymentPayload),
+        });
+
+        console.log('📊 Payment response status:', paymentResponse.status);
+
+        if (!paymentResponse.ok) {
+          const errorData = await paymentResponse.json();
+          console.error('❌ Payment creation failed:', errorData);
+          throw new Error(errorData.message || "Không thể tạo thanh toán");
+        }
+
+        const paymentData = await paymentResponse.json();
+        console.log('✅ Payment created:', paymentData);
+
+        alert("🎉 Đăng ký và tạo thanh toán thành công! Vui lòng chờ admin xác nhận.");
+        navigate("/classes");
+        return;
+      }
+
+      // Handle existing enrollments
       const selectedClassIds = registeredClasses
         .filter((cls) => selectedClasses[cls.id])
         .map((cls) => cls.id);
@@ -400,8 +580,23 @@ export default function PaymentPage() {
 
       setShowReceipt(true);
     } catch (error) {
-      console.error("Lỗi khi thanh toán:", error);
-      alert("Không thể thanh toán. Vui lòng thử lại sau: " + error.message);
+      console.error("❌ Lỗi xử lý thanh toán:", error);
+      
+      // Hiển thị thông báo lỗi chi tiết
+      let errorMessage = "Có lỗi xảy ra khi xử lý thanh toán. Vui lòng thử lại.";
+      
+      if (error.message) {
+        if (error.message.includes("đăng ký")) {
+          errorMessage = `Lỗi đăng ký lớp học: ${error.message}`;
+        } else if (error.message.includes("thanh toán")) {
+          errorMessage = `Lỗi tạo thanh toán: ${error.message}`;
+        } else {
+          errorMessage = `Lỗi: ${error.message}`;
+        }
+      }
+      
+      // Hiển thị cảnh báo với thông tin lỗi chi tiết
+      alert(`🚨 ${errorMessage}\n\n📝 Chi tiết: Vui lòng kiểm tra kết nối mạng và thử lại. Nếu lỗi tiếp tục, hãy liên hệ admin.`);
     }
   };
 
@@ -859,7 +1054,13 @@ export default function PaymentPage() {
             onClose={(success) => {
               setShowBankPopup(false);
               if (success) {
-                setShowReceipt(true);
+                if (isFromClassPage) {
+                  // Redirect to classes page instead of showing receipt
+                  alert("🎉 Đăng ký và tạo thanh toán thành công! Vui lòng chờ admin xác nhận.");
+                  navigate("/classes");
+                } else {
+                  setShowReceipt(true);
+                }
               }
             }}
             amount={total}
@@ -868,6 +1069,8 @@ export default function PaymentPage() {
             selectedClasses={selectedClasses}
             membershipPayment={membershipPayment}
             includeMembership={includeMembership}
+            isFromClassPage={isFromClassPage}
+            singleClassPayment={singleClassPayment}
           />
         )}
 

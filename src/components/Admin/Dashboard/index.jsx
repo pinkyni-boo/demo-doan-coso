@@ -469,7 +469,6 @@ const AdminDashboardNew = () => {
     );
   };
 
-  // Render content based on active module
   const renderContent = () => {
     switch (activeModule) {
       case "dashboard":

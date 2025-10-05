@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import axios from "axios";
@@ -21,7 +22,10 @@ import {
   EyeOff,
 } from "lucide-react";
 
+
 const UserManagement = () => {
+  const [classHistory, setClassHistory] = useState([]);
+  const [loadingClassHistory, setLoadingClassHistory] = useState(false);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -111,12 +115,35 @@ const UserManagement = () => {
         lockReason: user.lockReason || "",
         lockUntil: user.lockUntil || "",
       });
+        if (type === "view") {
+          fetchClassHistory(user._id);
+        } else {
+          setClassHistory([]);
+        }
     } else {
       resetForm();
+        setClassHistory([]);
     }
     setShowModal(true);
     setShowDropdown(null);
   };
+
+    const fetchClassHistory = async (userId) => {
+      setLoadingClassHistory(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(`http://localhost:5000/api/classes/user/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        // Filter only completed classes
+        const completed = (res.data.enrollments || []).filter(e => e.status === "completed");
+        setClassHistory(completed);
+      } catch (err) {
+        setClassHistory([]);
+      } finally {
+        setLoadingClassHistory(false);
+      }
+    };
 
   const closeModal = () => {
     setShowModal(false);
@@ -244,6 +271,38 @@ const UserManagement = () => {
         </button>
       </div>
 
+              {/* Class History for admin view */}
+              {modalType === "view" && (
+                <div className="mt-6">
+                  <h4 className="text-md font-semibold mb-2">Lịch sử lớp học</h4>
+                  {loadingClassHistory ? (
+                    <div className="text-gray-500">Đang tải...</div>
+                  ) : classHistory.length === 0 ? (
+                    <div className="text-gray-500">Chưa có lớp học đã hoàn thành</div>
+                  ) : (
+                    <ul className="divide-y divide-gray-200">
+                      {classHistory.map((enroll) => (
+                        <li key={enroll._id} className="py-2">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <span className="font-medium text-blue-700">{enroll.classId?.name || 'Lớp không xác định'}</span>
+                              <span className="ml-2 text-gray-500 text-sm">({enroll.classId?.code || ''})</span>
+                              {enroll.feedback || enroll.hasFeedback ? (
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                  Đã đánh giá
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-gray-500 text-sm mt-1 md:mt-0">
+                              Kết thúc: {enroll.classId?.endDate ? new Date(enroll.classId.endDate).toLocaleDateString('vi-VN') : '---'}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
       {/* Notification */}
       {notification.message && (
         <div
@@ -569,7 +628,6 @@ const UserManagement = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                   >
                     <option value="user">Người dùng</option>
-                    <option value="admin">Admin</option>
                     <option value="trainer">Huấn luyện viên</option>
                   </select>
                 </div>
