@@ -11,9 +11,6 @@ export default function BankPopup({
   selectedClasses,
   membershipPayment,
   includeMembership,
-  // Add new props for single class payment
-  isFromClassPage = false,
-  singleClassPayment = null,
 }) {
   const [step, setStep] = useState(1); // 1: Thông tin chuyển khoản, 2: Xác nhận thanh toán
   const [processing, setProcessing] = useState(false);
@@ -44,74 +41,6 @@ export default function BankPopup({
         return;
       }
 
-      // Handle single class payment from class page
-      if (isFromClassPage && singleClassPayment) {
-        console.log('🏦 Bank popup: Processing single class payment');
-        
-        // First enroll in the class
-        const enrollResponse = await fetch("http://localhost:5000/api/classes/enroll", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            classId: singleClassPayment.classId,
-          }),
-        });
-
-        if (!enrollResponse.ok) {
-          const errorData = await enrollResponse.json();
-          throw new Error(errorData.message || "Không thể đăng ký lớp học");
-        }
-
-        const enrollData = await enrollResponse.json();
-        console.log('✅ Bank popup: Enrollment created:', enrollData);
-
-        // Extract enrollment ID
-        let enrollmentId;
-        if (enrollData.enrollment && enrollData.enrollment._id) {
-          enrollmentId = enrollData.enrollment._id;
-        } else if (enrollData._id) {
-          enrollmentId = enrollData._id;
-        } else if (enrollData.data && enrollData.data._id) {
-          enrollmentId = enrollData.data._id;
-        } else {
-          throw new Error("Không thể xác định ID đăng ký");
-        }
-
-        // Then create payment
-        const response = await fetch("http://localhost:5000/api/payments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            amount: singleClassPayment.amount,
-            method: "Thẻ ngân hàng",
-            registrationIds: [enrollmentId],
-            status: "pending",
-            paymentType: "class",
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Không thể tạo thanh toán");
-        }
-
-        setPaymentConfirmed(true);
-        setProcessing(false);
-
-        // Tự động đóng sau 2 giây và quay lại trang classes
-        setTimeout(() => {
-          onClose(true);
-        }, 2000);
-        return;
-      }
-
-      // Handle existing flow for multiple classes/membership
       const selectedClassIds = registeredClasses
         .filter((cls) => selectedClasses[cls.id])
         .map((cls) => cls.id);
@@ -482,8 +411,7 @@ export default function BankPopup({
         </div>
       </motion.div>
 
-      {/* CSS styles for scrollbar */}
-      <style>{`
+      <style jsx>{`
         .custom-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: #d97706 #f3f4f6;

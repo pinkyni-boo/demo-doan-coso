@@ -285,7 +285,7 @@ export default function TrainerDashboard() {
     return (
       <div className="min-h-screen bg-gray-50">
         <Nav user={user} setUser={setUser} />
-        <div className="pt-16 flex items-center justify-center min-h-[calc(100vh-64px)]">
+        <div className="pt-20 flex items-center justify-center min-h-[calc(100vh-80px)]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Đang tải dữ liệu...</p>
@@ -301,7 +301,7 @@ export default function TrainerDashboard() {
       <Nav user={user} setUser={setUser} />
 
       {/* Main Content */}
-      <div className="pt-16 px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="pt-20 px-4 sm:px-6 lg:px-8 pb-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -347,64 +347,6 @@ export default function TrainerDashboard() {
             />
           </div>
 
-
-          {/* Quick Actions */}
-          <div className="mt-8">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Thao tác nhanh
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <button
-                  onClick={() => navigate("/trainer/classes")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                >
-                  <BookOpen className="h-8 w-8 text-blue-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Quản lý lớp học
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/trainer/schedule")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors"
-                >
-                  <Calendar className="h-8 w-8 text-green-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Xem lịch dạy
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/trainer/issue-report")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors"
-                >
-                  <AlertTriangle className="h-8 w-8 text-red-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Báo cáo vấn đề
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/services")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
-                >
-                  <Star className="h-8 w-8 text-purple-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Dịch vụ
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/club")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
-                >
-                  <Users className="h-8 w-8 text-orange-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Câu lạc bộ
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Assigned Classes & Today's Schedule */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Assigned Classes */}
             <div className="lg:col-span-2">
@@ -482,6 +424,61 @@ export default function TrainerDashboard() {
             </div>
           </div>
 
+          {/* Quick Actions */}
+          <div className="mt-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Thao tác nhanh
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <button
+                  onClick={() => navigate("/trainer/classes")}
+                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <BookOpen className="h-8 w-8 text-blue-600 mb-2" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Quản lý lớp học
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate("/trainer/schedule")}
+                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-colors"
+                >
+                  <Calendar className="h-8 w-8 text-green-600 mb-2" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Xem lịch dạy
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate("/trainer/issue-report")}
+                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-colors"
+                >
+                  <AlertTriangle className="h-8 w-8 text-red-600 mb-2" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Báo cáo vấn đề
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate("/services")}
+                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
+                >
+                  <Star className="h-8 w-8 text-purple-600 mb-2" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Dịch vụ
+                  </span>
+                </button>
+                <button
+                  onClick={() => navigate("/club")}
+                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                >
+                  <Users className="h-8 w-8 text-orange-600 mb-2" />
+                  <span className="text-sm font-medium text-gray-900">
+                    Câu lạc bộ
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
