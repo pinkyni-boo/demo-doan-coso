@@ -157,7 +157,6 @@ export default function NavBar({ user, setUser }) {
       ],
      },
     { name: "Lịch tập", path: "/schedule" },
-    { name: "Đánh giá", path: "/feedback" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
   ];
@@ -181,7 +180,6 @@ export default function NavBar({ user, setUser }) {
       ],
      },
     { name: "Lịch tập", path: "/schedule" },
-    { name: "Đánh giá", path: "/feedback" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
     

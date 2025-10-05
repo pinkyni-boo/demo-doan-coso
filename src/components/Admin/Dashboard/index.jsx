@@ -207,7 +207,6 @@ const AdminDashboardNew = () => {
       dropdown: [
         { name: "Danh sách User", component: "users" },
         { name: "Quản lý lớp học", component: "classes" },
-        { name: "Quản lý điểm danh", component: "attendance" },
         { name: "Quản lý đánh giá", component: "feedback" },
         { name: "Quản lý thẻ thành viên", component: "memberships" },
         { name: "Quản lý thanh toán", component: "payments" },

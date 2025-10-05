@@ -738,22 +738,8 @@ const FeedbackPage = () => {
                 <h3 className="text-xl font-semibold text-stone-700 mb-2">
                   {showMyFeedback ? "Bạn chưa có đánh giá nào" : "Chưa có đánh giá nào"}
                 </h3>
-                <p className="text-stone-500 mb-6">
-                  {showMyFeedback 
-                    ? "Hãy tham gia các lớp học và chia sẻ trải nghiệm của bạn!"
-                    : "Hãy là người đầu tiên chia sẻ trải nghiệm của bạn!"
-                  }
-                </p>
-                {!showMyFeedback && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleCreateFeedback}
-                    className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-6 py-3 rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all"
-                  >
-                    Viết đánh giá đầu tiên
-                  </motion.button>
-                )}
+                
+                
               </motion.div>
             )}
           </AnimatePresence>
