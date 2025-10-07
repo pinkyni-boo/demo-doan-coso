@@ -49,7 +49,6 @@ import { initializeAuthCleanup } from "./utils/authCleanup";
 // Setup axios interceptors
 setupAxiosInterceptors(axios);
 
-// Wrap toàn bộ app content
 function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);

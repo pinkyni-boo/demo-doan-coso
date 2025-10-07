@@ -1,5 +1,3 @@
-// Token utility functions for debugging and management
-
 export const getToken = () => {
   const token = localStorage.getItem("token");
   console.log(

@@ -11,7 +11,6 @@ export const useAccountStatusCheck = (user) => {
         const token = getToken();
         if (!token) return;
 
-        // Gọi API để kiểm tra trạng thái tài khoản
         await axios.get("http://localhost:5000/api/users/profile", {
           headers: { Authorization: `Bearer ${token}` },
         });

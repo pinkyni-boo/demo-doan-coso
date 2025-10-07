@@ -47,7 +47,6 @@ class NotificationService {
     });
   }
 
-  // Thông báo admin xác nhận lịch bù bị từ chối
   static async notifyTrainerScheduleRejected(scheduleRequest, admin) {
     const title = "Lịch bù bị từ chối";
     const message = `Admin đã từ chối yêu cầu thay đổi lịch dạy cho ngày ${new Date(

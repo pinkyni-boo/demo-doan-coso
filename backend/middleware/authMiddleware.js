@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Middleware xác thực token
 export const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
@@ -184,11 +183,9 @@ export const verifyTrainer = (req, res, next) => {
       return next();
     }
 
-    return res
-      .status(403)
-      .json({
-        message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
-      });
+    return res.status(403).json({
+      message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
+    });
   } catch (error) {
     console.error("Trainer verification error:", error);
     return res

@@ -32,7 +32,6 @@ const problematicValues = [
   "true",
 ];
 
-// Clean up token
 if (!currentToken || problematicValues.includes(currentToken.trim())) {
   console.log("❌ Found problematic token, removing...");
   localStorage.removeItem("token");

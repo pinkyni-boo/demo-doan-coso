@@ -159,7 +159,6 @@ export default function TrainerManagement() {
       return;
     }
 
-    // Validation số điện thoại (9-15 số)
     const phoneRegex = /^[0-9]{9,15}$/;
     if (!phoneRegex.test(form.phone)) {
       alert("Vui lòng nhập số điện thoại hợp lệ (9-15 chữ số)!");

@@ -61,7 +61,7 @@ const PaymentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
+//
 const Payment = mongoose.model("Payment", PaymentSchema);
 
 export default Payment;

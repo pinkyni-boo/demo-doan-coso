@@ -42,7 +42,6 @@ export default function Login({ setUser }) {
 
       const { token, user } = response.data;
 
-      // Use the improved token setting function
       if (setToken(token)) {
         localStorage.setItem("user", JSON.stringify(user));
       } else {

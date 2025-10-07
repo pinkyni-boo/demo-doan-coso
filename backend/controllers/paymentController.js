@@ -49,7 +49,6 @@ export const getPayments = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Admin có thể xem tất cả payments của mình như user bình thường
     const payments = await Payment.find({ user: userId }).sort({
       createdAt: -1,
     });
@@ -227,7 +226,6 @@ export const rejectPayment = async (req, res) => {
     payment.rejectionReason = rejectionReason || "Admin từ chối thanh toán";
     await payment.save();
 
-    // Cập nhật trạng thái đăng ký khi từ chối thanh toán
     if (payment.registrationIds && payment.registrationIds.length > 0) {
       try {
         if (

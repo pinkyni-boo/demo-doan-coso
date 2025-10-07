@@ -24,7 +24,6 @@ export default function useNotifications() {
   }, []);
 
   useEffect(() => {
-    // Only fetch if we have a valid token
     if (getToken()) {
       fetchUnreadCount(); // Lần đầu load
       const interval = setInterval(fetchUnreadCount, 10000); // Mỗi 10s

@@ -95,7 +95,6 @@ export default function ViewClasses() {
       const response = await axios.get("http://localhost:5000/api/services");
       console.log("📊 Services API response:", response.data);
 
-      // Xử lý response tùy theo format API
       if (Array.isArray(response.data)) {
         // Nếu API trả về array trực tiếp
         setServices(response.data);

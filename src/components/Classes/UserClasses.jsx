@@ -28,7 +28,6 @@ import ClassFeedbackModal from "./ClassFeedbackModal";
 import ViewFeedbackModal from "./ViewFeedbackModal";
 
 export default function UserClasses() {
-  // History view toggle
   const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
   const [enrollments, setEnrollments] = useState([]);

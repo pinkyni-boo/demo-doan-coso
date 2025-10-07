@@ -90,7 +90,6 @@ const NotificationCenter = ({
           onUnreadCountChange(userUnreadCount);
         }
       } else {
-        // If API returns unsuccessful, set empty notifications
         console.log("API returned unsuccessful response");
         setNotifications([]);
         setUnreadCount(0);

@@ -1,5 +1,3 @@
-// LocalStorage cleanup utility to fix token issues
-
 export const cleanupLocalStorage = () => {
   console.log("Cleaning up localStorage...");
 

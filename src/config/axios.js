@@ -5,7 +5,6 @@ import { getToken, removeToken } from "../utils/tokenUtils.js";
 axios.defaults.baseURL =
   import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// Interceptor để tự động thêm token vào headers
 axios.interceptors.request.use(
   (config) => {
     const token = getToken();
