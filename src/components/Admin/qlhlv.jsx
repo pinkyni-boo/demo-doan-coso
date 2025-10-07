@@ -55,7 +55,7 @@ export default function TrainerManagement() {
     try {
       console.log("📋 Fetching trainers...");
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         console.error("❌ No token found for fetching trainers");
         return;
@@ -64,9 +64,9 @@ export default function TrainerManagement() {
       const res = await axios.get("http://localhost:5000/api/trainers", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       console.log("✅ Trainers API response:", res.data);
-      
+
       if (Array.isArray(res.data)) {
         setTrainers(res.data);
         console.log(`📊 Loaded ${res.data.length} trainers`);
@@ -85,7 +85,7 @@ export default function TrainerManagement() {
     try {
       console.log("🔧 Fetching services...");
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         console.error("❌ No token found for fetching services");
         return;
@@ -94,9 +94,9 @@ export default function TrainerManagement() {
       const res = await axios.get("http://localhost:5000/api/services", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       console.log("✅ Services API response:", res.data);
-      
+
       if (Array.isArray(res.data)) {
         setServices(res.data);
         console.log(`📊 Loaded ${res.data.length} services`);
@@ -181,8 +181,7 @@ export default function TrainerManagement() {
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
-       
+
         if (response.data.message) {
           alert(response.data.message);
         } else if (response.data.warning) {
@@ -191,10 +190,14 @@ export default function TrainerManagement() {
           alert("Cập nhật HLV thành công!");
         }
       } else {
-        const response = await axios.post("http://localhost:5000/api/trainers", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
+        const response = await axios.post(
+          "http://localhost:5000/api/trainers",
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
         // Hiển thị thông báo tài khoản đăng nhập nếu có
         if (response.data.message) {
           alert(response.data.message);
@@ -253,7 +256,9 @@ export default function TrainerManagement() {
           <div className="bg-white p-8 rounded-lg shadow">
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              <span className="ml-2">Đang tải danh sách huấn luyện viên...</span>
+              <span className="ml-2">
+                Đang tải danh sách huấn luyện viên...
+              </span>
             </div>
           </div>
         ) : (
@@ -274,35 +279,59 @@ export default function TrainerManagement() {
               <tbody>
                 {trainers.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="border px-4 py-8 text-center text-gray-500">
+                    <td
+                      colSpan="8"
+                      className="border px-4 py-8 text-center text-gray-500"
+                    >
                       Chưa có huấn luyện viên nào được tạo
                     </td>
                   </tr>
                 ) : (
                   trainers.map((trainer, idx) => (
                     <tr key={trainer._id || idx} className="hover:bg-gray-50">
-                      <td className="border px-4 py-2">{trainer.fullName || trainer.name || "N/A"}</td>
-                      <td className="border px-4 py-2">{trainer.email || "N/A"}</td>
-                      <td className="border px-4 py-2">{trainer.phone || "N/A"}</td>
                       <td className="border px-4 py-2">
-                        {trainer.gender === "male" ? "Nam" : trainer.gender === "female" ? "Nữ" : "N/A"}
+                        {trainer.fullName || trainer.name || "N/A"}
                       </td>
                       <td className="border px-4 py-2">
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          trainer.status === "active" ? "bg-green-100 text-green-800" :
-                          trainer.status === "inactive" ? "bg-yellow-100 text-yellow-800" :
-                          trainer.status === "terminated" ? "bg-red-100 text-red-800" :
-                          "bg-gray-100 text-gray-800"
-                        }`}>
-                          {trainer.status === "active" ? "Đang làm" :
-                           trainer.status === "inactive" ? "Tạm nghỉ" :
-                           trainer.status === "terminated" ? "Nghỉ việc" : "N/A"}
+                        {trainer.email || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.phone || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.gender === "male"
+                          ? "Nam"
+                          : trainer.gender === "female"
+                          ? "Nữ"
+                          : "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            trainer.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : trainer.status === "inactive"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : trainer.status === "terminated"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {trainer.status === "active"
+                            ? "Đang làm"
+                            : trainer.status === "inactive"
+                            ? "Tạm nghỉ"
+                            : trainer.status === "terminated"
+                            ? "Nghỉ việc"
+                            : "N/A"}
                         </span>
                       </td>
                       <td className="border px-4 py-2">
                         {trainer.specialty?.name || trainer.specialty || "N/A"}
                       </td>
-                      <td className="border px-4 py-2">{trainer.experience || 0} năm</td>
+                      <td className="border px-4 py-2">
+                        {trainer.experience || 0} năm
+                      </td>
                       <td className="border px-4 py-2">
                         <div className="flex gap-2">
                           <button
@@ -330,7 +359,9 @@ export default function TrainerManagement() {
         {showStatusPopup && (
           <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-              <h3 className="font-bold text-lg mb-2">Xác nhận chuyển trạng thái</h3>
+              <h3 className="font-bold text-lg mb-2">
+                Xác nhận chuyển trạng thái
+              </h3>
               <p className="mb-2">Nhập lý do chuyển trạng thái:</p>
               <textarea
                 className="border w-full p-2 rounded mb-2"
@@ -502,16 +533,19 @@ export default function TrainerManagement() {
                       required
                     />
                   </div>
-                  
                 </div>
                 {/* Thông tin tài khoản bị khóa */}
                 {selectedTrainer?.userId?.isAccountLocked && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center mb-2">
-                      <span className="text-red-600 font-semibold">🔒 Tài khoản đã bị khóa</span>
+                      <span className="text-red-600 font-semibold">
+                        🔒 Tài khoản đã bị khóa
+                      </span>
                     </div>
                     <p className="text-red-700 text-sm">
-                      <strong>Lý do:</strong> {selectedTrainer.userId.lockReason || "Không có lý do cụ thể"}
+                      <strong>Lý do:</strong>{" "}
+                      {selectedTrainer.userId.lockReason ||
+                        "Không có lý do cụ thể"}
                     </p>
                   </div>
                 )}
@@ -590,7 +624,11 @@ export default function TrainerManagement() {
                     className="bg-amber-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Đang xử lý..." : (modalType === "edit" ? "Cập nhật" : "Thêm mới")}
+                    {isSubmitting
+                      ? "Đang xử lý..."
+                      : modalType === "edit"
+                      ? "Cập nhật"
+                      : "Thêm mới"}
                   </button>
                 </div>
               </form>

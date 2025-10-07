@@ -230,26 +230,36 @@ export const rejectPayment = async (req, res) => {
     // Cập nhật trạng thái đăng ký khi từ chối thanh toán
     if (payment.registrationIds && payment.registrationIds.length > 0) {
       try {
-        if (payment.paymentType === "class" || payment.paymentType === "membership_and_class") {
+        if (
+          payment.paymentType === "class" ||
+          payment.paymentType === "membership_and_class"
+        ) {
           // Cập nhật trạng thái ClassEnrollment
           await ClassEnrollment.updateMany(
             { _id: { $in: payment.registrationIds } },
-            { 
+            {
               paymentStatus: false,
-              status: "cancelled"
+              status: "cancelled",
             }
           );
-          console.log(`Updated ${payment.registrationIds.length} class enrollments to cancelled status`);
-        } else if (payment.paymentType === "membership" || payment.paymentType === "membership_upgrade") {
+          console.log(
+            `Updated ${payment.registrationIds.length} class enrollments to cancelled status`
+          );
+        } else if (
+          payment.paymentType === "membership" ||
+          payment.paymentType === "membership_upgrade"
+        ) {
           // Cập nhật trạng thái Membership
           await Membership.updateMany(
             { _id: { $in: payment.registrationIds } },
-            { 
+            {
               paymentStatus: false,
-              status: "cancelled"
+              status: "cancelled",
             }
           );
-          console.log(`Updated ${payment.registrationIds.length} memberships to cancelled status`);
+          console.log(
+            `Updated ${payment.registrationIds.length} memberships to cancelled status`
+          );
         }
       } catch (updateError) {
         console.error("Error updating registration status:", updateError);
