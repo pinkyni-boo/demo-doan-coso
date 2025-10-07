@@ -1,29 +1,43 @@
-import { useEffect } from 'react';
-import axios from 'axios';
+import { useEffect } from "react";
+import axios from "axios";
+import { getToken, removeToken } from "../utils/tokenUtils";
 
 export const useAccountStatusCheck = (user) => {
   useEffect(() => {
-    if (!user || user.role !== 'trainer') return;
+    if (!user || user.role !== "trainer") return;
 
     const checkAccountStatus = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) return;
 
-        // Gọi API để kiểm tra trạng thái tài khoản
-        await axios.get('http://localhost:5000/api/users/profile', {
-          headers: { Authorization: `Bearer ${token}` }
+        await axios.get("http://localhost:5000/api/users/profile", {
+          headers: { Authorization: `Bearer ${token}` },
         });
       } catch (error) {
-        console.log('Account status check error:', error.response?.status, error.response?.data);
-        
+        console.log(
+          "Account status check error:",
+          error.response?.status,
+          error.response?.data
+        );
+
         // Chỉ logout khi tài khoản thực sự bị khóa
-        if (error.response?.status === 403 && error.response?.data?.isLocked === true) {
+        if (
+          error.response?.status === 403 &&
+          error.response?.data?.isLocked === true
+        ) {
           // Tài khoản bị khóa, logout tự động
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          alert(`Tài khoản của bạn đã bị khóa: ${error.response.data.reason || 'Không rõ lý do'}`);
-          window.location.href = '/login';
+          removeToken();
+          alert(
+            `Tài khoản của bạn đã bị khóa: ${
+              error.response.data.reason || "Không rõ lý do"
+            }`
+          );
+
+          // Only redirect if not already on login page
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
         }
         // Bỏ qua các lỗi khác (network, server error, etc.) để tránh logout không mong muốn
       }

@@ -10,7 +10,7 @@ class NotificationService {
     type,
     recipient,
     sender = null,
-    relatedId = null
+    relatedId = null,
   }) {
     try {
       const notification = new Notification({
@@ -19,7 +19,7 @@ class NotificationService {
         type,
         recipient,
         sender,
-        relatedId
+        relatedId,
       });
 
       await notification.save();
@@ -33,41 +33,46 @@ class NotificationService {
   // Thông báo admin xác nhận lịch bù cho HLV
   static async notifyTrainerScheduleApproved(scheduleRequest, admin) {
     const title = "Lịch bù đã được phê duyệt";
-    const message = `Admin đã xác nhận lịch dạy bù cho ngày ${new Date(scheduleRequest.originalDate).toLocaleDateString('vi-VN')}`;
-    
+    const message = `Admin đã xác nhận lịch dạy bù cho ngày ${new Date(
+      scheduleRequest.originalDate
+    ).toLocaleDateString("vi-VN")}`;
+
     return await this.createNotification({
       title,
       message,
       type: "schedule",
       recipient: scheduleRequest.trainer,
       sender: admin._id,
-      relatedId: scheduleRequest._id
+      relatedId: scheduleRequest._id,
     });
   }
 
-  // Thông báo admin xác nhận lịch bù bị từ chối
   static async notifyTrainerScheduleRejected(scheduleRequest, admin) {
     const title = "Lịch bù bị từ chối";
-    const message = `Admin đã từ chối yêu cầu thay đổi lịch dạy cho ngày ${new Date(scheduleRequest.originalDate).toLocaleDateString('vi-VN')}`;
-    
+    const message = `Admin đã từ chối yêu cầu thay đổi lịch dạy cho ngày ${new Date(
+      scheduleRequest.originalDate
+    ).toLocaleDateString("vi-VN")}`;
+
     return await this.createNotification({
       title,
       message,
       type: "schedule",
       recipient: scheduleRequest.trainer,
       sender: admin._id,
-      relatedId: scheduleRequest._id
+      relatedId: scheduleRequest._id,
     });
   }
 
   // Thông báo admin có yêu cầu bù lịch mới
   static async notifyAdminNewScheduleRequest(scheduleRequest, trainer) {
     const title = "Yêu cầu bù lịch mới";
-    const message = `HLV ${trainer.fullName || trainer.username} đã gửi yêu cầu thay đổi lịch dạy`;
-    
+    const message = `HLV ${
+      trainer.fullName || trainer.username
+    } đã gửi yêu cầu thay đổi lịch dạy`;
+
     // Lấy tất cả admin
     const admins = await User.find({ role: "admin" });
-    
+
     const notifications = [];
     for (const admin of admins) {
       const notification = await this.createNotification({
@@ -76,21 +81,23 @@ class NotificationService {
         type: "schedule",
         recipient: admin._id,
         sender: trainer._id,
-        relatedId: scheduleRequest._id
+        relatedId: scheduleRequest._id,
       });
       notifications.push(notification);
     }
-    
+
     return notifications;
   }
 
   // Thông báo admin có thanh toán cần xác nhận
   static async notifyAdminPaymentConfirmation(payment, user) {
     const title = "Thanh toán cần xác nhận";
-    const message = `Học viên ${user.fullName || user.username} đã thanh toán và cần xác nhận`;
-    
+    const message = `Học viên ${
+      user.fullName || user.username
+    } đã thanh toán và cần xác nhận`;
+
     const admins = await User.find({ role: "admin" });
-    
+
     const notifications = [];
     for (const admin of admins) {
       const notification = await this.createNotification({
@@ -99,33 +106,40 @@ class NotificationService {
         type: "payment",
         recipient: admin._id,
         sender: user._id,
-        relatedId: payment._id
+        relatedId: payment._id,
       });
       notifications.push(notification);
     }
-    
+
     return notifications;
   }
 
   // Thông báo học viên thanh toán được xác nhận
   static async notifyUserPaymentApproved(payment, admin) {
     const title = "Thanh toán đã được xác nhận";
-    const message = "Admin đã xác nhận thanh toán của bạn. Cảm ơn bạn đã sử dụng dịch vụ!";
-    
+    const message =
+      "Admin đã xác nhận thanh toán của bạn. Cảm ơn bạn đã sử dụng dịch vụ!";
+
     return await this.createNotification({
       title,
       message,
       type: "payment",
       recipient: payment.userId,
       sender: admin._id,
-      relatedId: payment._id
+      relatedId: payment._id,
     });
   }
 
   // Thông báo học viên về điểm danh
-  static async notifyStudentsAttendance(classData, sessionNumber, trainer, presentStudents, absentStudents) {
+  static async notifyStudentsAttendance(
+    classData,
+    sessionNumber,
+    trainer,
+    presentStudents,
+    absentStudents
+  ) {
     const notifications = [];
-    
+
     // Thông báo cho học viên có mặt
     for (const student of presentStudents) {
       const notification = await this.createNotification({
@@ -134,7 +148,7 @@ class NotificationService {
         type: "attendance",
         recipient: student._id,
         sender: trainer._id,
-        relatedId: classData._id
+        relatedId: classData._id,
       });
       notifications.push(notification);
     }
@@ -147,7 +161,7 @@ class NotificationService {
         type: "attendance",
         recipient: student._id,
         sender: trainer._id,
-        relatedId: classData._id
+        relatedId: classData._id,
       });
       notifications.push(notification);
     }
@@ -159,7 +173,7 @@ class NotificationService {
   static async getUserNotifications(userId, page = 1, limit = 20) {
     try {
       const skip = (page - 1) * limit;
-      
+
       const notifications = await Notification.find({ recipient: userId })
         .populate("sender", "fullName username")
         .sort({ createdAt: -1 })
@@ -167,9 +181,9 @@ class NotificationService {
         .limit(limit);
 
       const total = await Notification.countDocuments({ recipient: userId });
-      const unreadCount = await Notification.countDocuments({ 
-        recipient: userId, 
-        isRead: false 
+      const unreadCount = await Notification.countDocuments({
+        recipient: userId,
+        isRead: false,
       });
 
       return {
@@ -177,7 +191,7 @@ class NotificationService {
         total,
         unreadCount,
         page,
-        totalPages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit),
       };
     } catch (error) {
       console.error("Error getting user notifications:", error);
@@ -190,9 +204,9 @@ class NotificationService {
     try {
       const notification = await Notification.findOneAndUpdate(
         { _id: notificationId, recipient: userId },
-        { 
-          isRead: true, 
-          readAt: new Date() 
+        {
+          isRead: true,
+          readAt: new Date(),
         },
         { new: true }
       );
@@ -209,14 +223,80 @@ class NotificationService {
     try {
       await Notification.updateMany(
         { recipient: userId, isRead: false },
-        { 
-          isRead: true, 
-          readAt: new Date() 
+        {
+          isRead: true,
+          readAt: new Date(),
         }
       );
       return true;
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
+      throw error;
+    }
+  }
+
+  // Thông báo user khi thanh toán được xác nhận
+  static async notifyUserPaymentConfirmed(payment, classEnrollment) {
+    try {
+      const title = "Thanh toán đã được xác nhận";
+      const message = `Thanh toán ${payment.amount.toLocaleString(
+        "vi-VN"
+      )}đ của bạn đã được xác nhận. Bạn có thể tham gia lớp học.`;
+
+      return await this.createNotification({
+        title,
+        message,
+        type: "payment",
+        recipient: payment.user,
+        relatedId: payment._id,
+      });
+    } catch (error) {
+      console.error("Error creating payment confirmation notification:", error);
+      throw error;
+    }
+  }
+
+  // Thông báo user khi membership được kích hoạt
+  static async notifyUserMembershipActivated(payment, membership) {
+    try {
+      const title = "Gói thành viên đã được kích hoạt";
+      const message = `Gói thành viên của bạn đã được kích hoạt thành công. Bạn có thể sử dụng tất cả các dịch vụ.`;
+
+      return await this.createNotification({
+        title,
+        message,
+        type: "membership",
+        recipient: payment.user,
+        relatedId: membership._id,
+      });
+    } catch (error) {
+      console.error(
+        "Error creating membership activation notification:",
+        error
+      );
+      throw error;
+    }
+  }
+
+  // Thông báo user khi thanh toán bị từ chối
+  static async notifyUserPaymentRejected(payment, rejectionReason) {
+    try {
+      const title = "Thanh toán bị từ chối";
+      const message = `Thanh toán ${payment.amount.toLocaleString(
+        "vi-VN"
+      )}đ của bạn đã bị từ chối. Lý do: ${
+        rejectionReason || "Không rõ lý do"
+      }. Vui lòng liên hệ admin để biết thêm chi tiết.`;
+
+      return await this.createNotification({
+        title,
+        message,
+        type: "payment-rejected",
+        recipient: payment.user,
+        relatedId: payment._id,
+      });
+    } catch (error) {
+      console.error("Error creating payment rejection notification:", error);
       throw error;
     }
   }

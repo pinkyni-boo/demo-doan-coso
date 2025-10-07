@@ -40,26 +40,75 @@ export default function TrainerManagement() {
   const [modalType, setModalType] = useState("add");
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchTrainers();
-    fetchServices();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchTrainers(), fetchServices()]);
+      setIsLoading(false);
+    };
+    loadData();
   }, []);
 
   const fetchTrainers = async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get("http://localhost:5000/api/trainers", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setTrainers(res.data);
+    try {
+      console.log("📋 Fetching trainers...");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("❌ No token found for fetching trainers");
+        return;
+      }
+
+      const res = await axios.get("http://localhost:5000/api/trainers", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("✅ Trainers API response:", res.data);
+
+      if (Array.isArray(res.data)) {
+        setTrainers(res.data);
+        console.log(`📊 Loaded ${res.data.length} trainers`);
+      } else {
+        console.error("❌ API response is not an array:", res.data);
+        setTrainers([]);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching trainers:", error);
+      console.error("Response:", error.response?.data);
+      setTrainers([]);
+    }
   };
 
   const fetchServices = async () => {
-    const token = localStorage.getItem("token");
-    const res = await axios.get("http://localhost:5000/api/services", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setServices(res.data);
+    try {
+      console.log("🔧 Fetching services...");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        console.error("❌ No token found for fetching services");
+        return;
+      }
+
+      const res = await axios.get("http://localhost:5000/api/services", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("✅ Services API response:", res.data);
+
+      if (Array.isArray(res.data)) {
+        setServices(res.data);
+        console.log(`📊 Loaded ${res.data.length} services`);
+      } else {
+        console.error("❌ Services API response is not an array:", res.data);
+        setServices([]);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching services:", error);
+      console.error("Response:", error.response?.data);
+      setServices([]);
+    }
   };
 
   const handleChange = (e) => {
@@ -110,7 +159,6 @@ export default function TrainerManagement() {
       return;
     }
 
-    // Validation số điện thoại (9-15 số)
     const phoneRegex = /^[0-9]{9,15}$/;
     if (!phoneRegex.test(form.phone)) {
       alert("Vui lòng nhập số điện thoại hợp lệ (9-15 chữ số)!");
@@ -132,8 +180,7 @@ export default function TrainerManagement() {
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
-       
+
         if (response.data.message) {
           alert(response.data.message);
         } else if (response.data.warning) {
@@ -142,10 +189,14 @@ export default function TrainerManagement() {
           alert("Cập nhật HLV thành công!");
         }
       } else {
-        const response = await axios.post("http://localhost:5000/api/trainers", payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
+        const response = await axios.post(
+          "http://localhost:5000/api/trainers",
+          payload,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
         // Hiển thị thông báo tài khoản đăng nhập nếu có
         if (response.data.message) {
           alert(response.data.message);
@@ -200,35 +251,116 @@ export default function TrainerManagement() {
           Thêm Huấn luyện viên
         </button>
         {/* Danh sách HLV */}
-        <table className="min-w-full bg-white border">
-          <thead>
-            <tr>
-              <th className="border px-4 py-2">Họ tên</th>
-              <th className="border px-4 py-2">Email</th>
-              <th className="border px-4 py-2">SĐT</th>
-              <th className="border px-4 py-2">Giới tính</th>
-              <th className="border px-4 py-2">Trạng thái</th>
-              <th className="border px-4 py-2">Chuyên môn</th>
-              <th className="border px-4 py-2">Kinh nghiệm</th>
-              <th className="border px-4 py-2">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            {trainers.map((trainer, idx) =>
-              trainer && trainer.name ? (
-                <div key={trainer._id || idx}>
-                  {/* ...hiển thị trainer... */}
-                  {trainer.name}
-                </div>
-              ) : null
-            )}
-          </tbody>
-        </table>
+        {isLoading ? (
+          <div className="bg-white p-8 rounded-lg shadow">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="ml-2">
+                Đang tải danh sách huấn luyện viên...
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full bg-white border">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="border px-4 py-2 text-left">Họ tên</th>
+                  <th className="border px-4 py-2 text-left">Email</th>
+                  <th className="border px-4 py-2 text-left">SĐT</th>
+                  <th className="border px-4 py-2 text-left">Giới tính</th>
+                  <th className="border px-4 py-2 text-left">Trạng thái</th>
+                  <th className="border px-4 py-2 text-left">Chuyên môn</th>
+                  <th className="border px-4 py-2 text-left">Kinh nghiệm</th>
+                  <th className="border px-4 py-2 text-left">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trainers.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="8"
+                      className="border px-4 py-8 text-center text-gray-500"
+                    >
+                      Chưa có huấn luyện viên nào được tạo
+                    </td>
+                  </tr>
+                ) : (
+                  trainers.map((trainer, idx) => (
+                    <tr key={trainer._id || idx} className="hover:bg-gray-50">
+                      <td className="border px-4 py-2">
+                        {trainer.fullName || trainer.name || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.email || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.phone || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.gender === "male"
+                          ? "Nam"
+                          : trainer.gender === "female"
+                          ? "Nữ"
+                          : "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs ${
+                            trainer.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : trainer.status === "inactive"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : trainer.status === "terminated"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {trainer.status === "active"
+                            ? "Đang làm"
+                            : trainer.status === "inactive"
+                            ? "Tạm nghỉ"
+                            : trainer.status === "terminated"
+                            ? "Nghỉ việc"
+                            : "N/A"}
+                        </span>
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.specialty?.name || trainer.specialty || "N/A"}
+                      </td>
+                      <td className="border px-4 py-2">
+                        {trainer.experience || 0} năm
+                      </td>
+                      <td className="border px-4 py-2">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => openModal("view", trainer)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                          >
+                            Xem
+                          </button>
+                          <button
+                            onClick={() => openModal("edit", trainer)}
+                            className="bg-amber-500 text-white px-3 py-1 rounded text-sm hover:bg-amber-600"
+                          >
+                            Sửa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
         {/* Popup chuyển trạng thái */}
         {showStatusPopup && (
           <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-md">
-              <h3 className="font-bold text-lg mb-2">Xác nhận chuyển trạng thái</h3>
+              <h3 className="font-bold text-lg mb-2">
+                Xác nhận chuyển trạng thái
+              </h3>
               <p className="mb-2">Nhập lý do chuyển trạng thái:</p>
               <textarea
                 className="border w-full p-2 rounded mb-2"
@@ -400,16 +532,19 @@ export default function TrainerManagement() {
                       required
                     />
                   </div>
-                  
                 </div>
                 {/* Thông tin tài khoản bị khóa */}
                 {selectedTrainer?.userId?.isAccountLocked && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <div className="flex items-center mb-2">
-                      <span className="text-red-600 font-semibold">🔒 Tài khoản đã bị khóa</span>
+                      <span className="text-red-600 font-semibold">
+                        🔒 Tài khoản đã bị khóa
+                      </span>
                     </div>
                     <p className="text-red-700 text-sm">
-                      <strong>Lý do:</strong> {selectedTrainer.userId.lockReason || "Không có lý do cụ thể"}
+                      <strong>Lý do:</strong>{" "}
+                      {selectedTrainer.userId.lockReason ||
+                        "Không có lý do cụ thể"}
                     </p>
                   </div>
                 )}
@@ -488,7 +623,11 @@ export default function TrainerManagement() {
                     className="bg-amber-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Đang xử lý..." : (modalType === "edit" ? "Cập nhật" : "Thêm mới")}
+                    {isSubmitting
+                      ? "Đang xử lý..."
+                      : modalType === "edit"
+                      ? "Cập nhật"
+                      : "Thêm mới"}
                   </button>
                 </div>
               </form>

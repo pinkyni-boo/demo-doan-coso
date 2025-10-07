@@ -37,18 +37,18 @@ import TrainerClassDetail from "./components/Trainer/ClassDetail";
 import AttendanceFlow from "./components/Trainer/AttendanceFlow";
 import TrainerIssueReport from "./components/Trainer/TrainerIssueReport";
 import NotificationToast from "./components/Common/NotificationToast";
-import PersonalSchedule from './components/Schedule';
+import PersonalSchedule from "./components/Schedule";
 
 import "./styles/vintage-global.css";
 import axios from "axios";
 import { setupAxiosInterceptors } from "./utils/authUtils";
 import { useAccountStatusCheck } from "./hooks/useAccountStatusCheck";
 import useNotifications from "./hooks/useNotifications";
+import { initializeAuthCleanup } from "./utils/authCleanup";
 
 // Setup axios interceptors
 setupAxiosInterceptors(axios);
 
-// Wrap toàn bộ app content
 function App({ appName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +61,9 @@ function App({ appName }) {
   useAccountStatusCheck(user);
 
   useEffect(() => {
+    // Initialize auth cleanup first to remove any corrupted data
+    initializeAuthCleanup();
+
     // Safely access localStorage
     try {
       const storedUser = localStorage.getItem("user");
@@ -109,15 +112,15 @@ function App({ appName }) {
           <main className="pt-16 main-content content-with-navbar">
             <Routes>
               {/* Home route - có hero section cần full screen */}
-              <Route 
-                path="/" 
+              <Route
+                path="/"
                 element={
                   <div className="-mt-16">
                     <HomePage />
                   </div>
-                } 
+                }
               />
-              
+
               {/* Các routes khác */}
               <Route path="/login" element={<Login setUser={setUser} />} />
               <Route path="/sign-up" element={<SignUp />} />

@@ -1,16 +1,27 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// Middleware xác thực token
 export const verifyToken = async (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
-   
+    console.log(
+      "Authorization header:",
+      authHeader ? `${authHeader.substring(0, 30)}...` : "No header"
+    );
 
-    const token = authHeader?.replace("Bearer ", "");
+    // Check if Authorization header exists and starts with "Bearer "
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("No valid Authorization header");
+      return res.status(401).json({
+        success: false,
+        message: "Không có token xác thực, truy cập bị từ chối",
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
     console.log(
       "Extracted token:",
-      token ? `${token.substring(0, 20)}...` : "No token"
+      token ? `${token.substring(0, 20)}...` : "null"
     );
 
     if (!token) {
@@ -89,17 +100,17 @@ export const verifyAdmin = (req, res, next) => {
 // Middleware cho phép admin truy cập tất cả, user chỉ truy cập của mình
 export const verifyOwnerOrAdmin = (req, res, next) => {
   const { userId } = req.params;
-  
+
   // Admin có thể truy cập tất cả
   if (req.user.role === "admin") {
     return next();
   }
-  
+
   // User chỉ có thể truy cập dữ liệu của mình
   if (req.user._id.toString() === userId) {
     return next();
   }
-  
+
   return res.status(403).json({
     message: "Truy cập bị từ chối. Bạn chỉ có thể truy cập dữ liệu của mình.",
   });
@@ -137,12 +148,12 @@ export const verifyAuthenticatedUser = (req, res, next) => {
   if (req.user.role === "admin") {
     return next();
   }
-  
+
   // Các role khác chỉ cần đã đăng nhập
   if (req.user) {
     return next();
   }
-  
+
   return res.status(401).json({
     message: "Bạn cần đăng nhập để truy cập.",
   });
@@ -172,9 +183,9 @@ export const verifyTrainer = (req, res, next) => {
       return next();
     }
 
-    return res
-      .status(403)
-      .json({ message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập" });
+    return res.status(403).json({
+      message: "Chỉ admin hoặc huấn luyện viên mới có quyền truy cập",
+    });
   } catch (error) {
     console.error("Trainer verification error:", error);
     return res

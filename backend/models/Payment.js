@@ -54,10 +54,14 @@ const PaymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    approvedBy: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );
-
+//
 const Payment = mongoose.model("Payment", PaymentSchema);
 
 export default Payment;

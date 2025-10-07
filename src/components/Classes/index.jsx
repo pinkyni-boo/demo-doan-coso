@@ -40,7 +40,7 @@ import {
   VintageButton,
   VintageGrid,
 } from "../Templates/VintageLayout";
-import TrainerDetailsModal from './TrainerDetailsModal';
+import TrainerDetailsModal from "./TrainerDetailsModal";
 
 export default function ViewClasses() {
   const navigate = useNavigate();
@@ -49,7 +49,7 @@ export default function ViewClasses() {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterService, setFilterService] = useState('all');
+  const [filterService, setFilterService] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [user, setUser] = useState(null);
   const [message, setMessage] = useState("");
@@ -92,10 +92,9 @@ export default function ViewClasses() {
 
   const fetchServices = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/services');
-      console.log('📊 Services API response:', response.data);
-      
-      // Xử lý response tùy theo format API
+      const response = await axios.get("http://localhost:5000/api/services");
+      console.log("📊 Services API response:", response.data);
+
       if (Array.isArray(response.data)) {
         // Nếu API trả về array trực tiếp
         setServices(response.data);
@@ -110,25 +109,25 @@ export default function ViewClasses() {
         setServices(response.data || []);
       }
     } catch (error) {
-      console.error('❌ Error fetching services:', error);
-      
+      console.error("❌ Error fetching services:", error);
+
       // Fallback với dữ liệu mẫu nếu API lỗi
       setServices([
         {
           _id: "default1",
           name: "FITNESS",
-          description: "Tập luyện thể hình cơ bản"
+          description: "Tập luyện thể hình cơ bản",
         },
         {
-          _id: "default2", 
+          _id: "default2",
           name: "YOGA",
-          description: "Yoga thư giãn và cân bằng"
+          description: "Yoga thư giãn và cân bằng",
         },
         {
           _id: "default3",
-          name: "BOXING", 
-          description: "Boxing và võ thuật"
-        }
+          name: "BOXING",
+          description: "Boxing và võ thuật",
+        },
       ]);
     }
   }, []);
@@ -212,16 +211,17 @@ export default function ViewClasses() {
   // Helper function: Convert time string to minutes
   const timeToMinutes = (timeStr) => {
     if (!timeStr) return 0;
-    
+
     // Remove any whitespace and convert to string
     const cleanTime = String(timeStr).trim();
-    
+
     // Handle different time formats
-    let hours = 0, minutes = 0;
-    
-    if (cleanTime.includes(':')) {
+    let hours = 0,
+      minutes = 0;
+
+    if (cleanTime.includes(":")) {
       // Format: "HH:MM" or "H:MM"
-      const parts = cleanTime.split(':');
+      const parts = cleanTime.split(":");
       hours = parseInt(parts[0]) || 0;
       minutes = parseInt(parts[1]) || 0;
     } else if (cleanTime.length === 4) {
@@ -233,32 +233,38 @@ export default function ViewClasses() {
       hours = parseInt(cleanTime.substring(0, 1)) || 0;
       minutes = parseInt(cleanTime.substring(1, 3)) || 0;
     }
-    
+
     const totalMinutes = hours * 60 + minutes;
-    console.log(`⏰ Converting time ${timeStr} -> ${hours}:${minutes} -> ${totalMinutes} minutes`);
-    
+    console.log(
+      `⏰ Converting time ${timeStr} -> ${hours}:${minutes} -> ${totalMinutes} minutes`
+    );
+
     return totalMinutes;
   };
 
   // Helper function: Get day name
   const getDayName = (dayOfWeek) => {
     const dayNames = [
-      'Chủ nhật',    // 0
-      'Thứ hai',     // 1
-      'Thứ ba',      // 2
-      'Thứ tư',      // 3
-      'Thứ năm',     // 4
-      'Thứ sáu',     // 5
-      'Thứ bảy'      // 6
+      "Chủ nhật", // 0
+      "Thứ hai", // 1
+      "Thứ ba", // 2
+      "Thứ tư", // 3
+      "Thứ năm", // 4
+      "Thứ sáu", // 5
+      "Thứ bảy", // 6
     ];
-    
+
     const dayIndex = parseInt(dayOfWeek);
     return dayNames[dayIndex] || `Ngày ${dayOfWeek}`;
   };
 
   // Function to check schedule conflicts
   const checkScheduleConflict = (newClass, userCurrentClasses) => {
-    if (!newClass.schedule || !Array.isArray(newClass.schedule) || newClass.schedule.length === 0) {
+    if (
+      !newClass.schedule ||
+      !Array.isArray(newClass.schedule) ||
+      newClass.schedule.length === 0
+    ) {
       return { hasConflict: false };
     }
 
@@ -279,23 +285,36 @@ export default function ViewClasses() {
       // Kiểm tra với tất cả lớp học hiện tại của user
       for (const enrollment of userCurrentClasses) {
         const existingClass = enrollment.class;
-        
-        console.log('🔍 Checking against existing class:', existingClass?.className);
-        console.log('📊 Enrollment status:', enrollment.status);
-        console.log('📊 Enrollment paymentStatus:', enrollment.paymentStatus);
-        console.log('� Class status:', existingClass?.status);
-        console.log('�📅 Existing class schedule:', existingClass?.schedule);
-        
+
+        console.log(
+          "🔍 Checking against existing class:",
+          existingClass?.className
+        );
+        console.log("📊 Enrollment status:", enrollment.status);
+        console.log("📊 Enrollment paymentStatus:", enrollment.paymentStatus);
+        console.log("� Class status:", existingClass?.status);
+        console.log("�📅 Existing class schedule:", existingClass?.schedule);
+
         // Chỉ kiểm tra với các lớp đang hoạt động (enrolled, confirmed, paid, ongoing)
-        const activeStatuses = ['enrolled', 'confirmed', 'paid', 'ongoing', 'active'];
-        if (!existingClass || 
-            !activeStatuses.includes(enrollment.status) ||
-            existingClass.status === 'completed' ||
-            existingClass.status === 'cancelled' ||
-            !existingClass.schedule || 
-            !Array.isArray(existingClass.schedule) ||
-            existingClass.schedule.length === 0) {
-          console.log(`⏭️ Skipping class ${existingClass?.className} - Status: ${enrollment.status}, ClassStatus: ${existingClass?.status}, ScheduleLength: ${existingClass?.schedule?.length}`);
+        const activeStatuses = [
+          "enrolled",
+          "confirmed",
+          "paid",
+          "ongoing",
+          "active",
+        ];
+        if (
+          !existingClass ||
+          !activeStatuses.includes(enrollment.status) ||
+          existingClass.status === "completed" ||
+          existingClass.status === "cancelled" ||
+          !existingClass.schedule ||
+          !Array.isArray(existingClass.schedule) ||
+          existingClass.schedule.length === 0
+        ) {
+          console.log(
+            `⏭️ Skipping class ${existingClass?.className} - Status: ${enrollment.status}, ClassStatus: ${existingClass?.status}, ScheduleLength: ${existingClass?.schedule?.length}`
+          );
           continue;
         }
 
@@ -309,11 +328,13 @@ export default function ViewClasses() {
           const existingEndMinutes = timeToMinutes(existingSlot.endTime);
 
           // Kiểm tra trùng thời gian (overlap)
-          const hasTimeOverlap = (
-            (newStartMinutes >= existingStartMinutes && newStartMinutes < existingEndMinutes) ||
-            (newEndMinutes > existingStartMinutes && newEndMinutes <= existingEndMinutes) ||
-            (newStartMinutes <= existingStartMinutes && newEndMinutes >= existingEndMinutes)
-          );
+          const hasTimeOverlap =
+            (newStartMinutes >= existingStartMinutes &&
+              newStartMinutes < existingEndMinutes) ||
+            (newEndMinutes > existingStartMinutes &&
+              newEndMinutes <= existingEndMinutes) ||
+            (newStartMinutes <= existingStartMinutes &&
+              newEndMinutes >= existingEndMinutes);
 
           if (hasTimeOverlap) {
             return {
@@ -322,7 +343,7 @@ export default function ViewClasses() {
               conflictDay: getDayName(newDayOfWeek),
               conflictTime: `${existingSlot.startTime} - ${existingSlot.endTime}`,
               newClassTime: `${newStartTime} - ${newEndTime}`,
-              conflictEnrollment: enrollment
+              conflictEnrollment: enrollment,
             };
           }
         }
@@ -426,7 +447,7 @@ export default function ViewClasses() {
     if (!user) return false;
     if (isUserEnrolled(classItem._id)) return false;
     if (isClassFull(classItem)) return false;
-    
+
     // Only allow enrollment for upcoming and ongoing classes
     const validStatuses = ["upcoming", "ongoing"];
     return validStatuses.includes(classItem.status);
@@ -436,7 +457,7 @@ export default function ViewClasses() {
   const isClassEnded = (classItem) => {
     const classEndDate = new Date(classItem.endDate);
     const today = new Date();
-    return classItem.status === 'completed' || classEndDate <= today;
+    return classItem.status === "completed" || classEndDate <= today;
   };
 
   // Check if user has confirmed payment (admin approved enrollment)
@@ -444,19 +465,20 @@ export default function ViewClasses() {
     const enrollment = userEnrollments.find(
       (enrollment) => enrollment.class?._id === classItem._id
     );
-    console.log('🔍 Checking payment status for class:', classItem.className);
-    console.log('🔍 Found enrollment:', enrollment);
-    
+    console.log("🔍 Checking payment status for class:", classItem.className);
+    console.log("🔍 Found enrollment:", enrollment);
+
     if (!enrollment) return false;
-    
+
     // Check various possible payment status fields
-    const isConfirmed = enrollment.status === 'confirmed' || 
-                       enrollment.status === 'paid' ||
-                       enrollment.paymentStatus === true ||
-                       enrollment.paymentStatus === 'confirmed' ||
-                       enrollment.paymentStatus === 'paid';
-    
-    console.log('💳 Payment confirmed:', isConfirmed);
+    const isConfirmed =
+      enrollment.status === "confirmed" ||
+      enrollment.status === "paid" ||
+      enrollment.paymentStatus === true ||
+      enrollment.paymentStatus === "confirmed" ||
+      enrollment.paymentStatus === "paid";
+
+    console.log("💳 Payment confirmed:", isConfirmed);
     return isConfirmed;
   };
 
@@ -465,18 +487,17 @@ export default function ViewClasses() {
     const enrollment = userEnrollments.find(
       (enrollment) => enrollment.class?._id === classItem._id
     );
-    
+
     if (!enrollment) return false;
-    
+
     // Has enrollment but payment not yet confirmed
     const isPending = enrollment && !hasConfirmedPayment(classItem);
-    console.log('⏳ Payment pending:', isPending);
+    console.log("⏳ Payment pending:", isPending);
     return isPending;
   };
 
   // Updated enrollment handler to redirect to payment
   const handleEnrollRedirect = (classItem) => {
-    
     if (!user) {
       showMessage("❌ Vui lòng đăng nhập để đăng ký lớp học", "error");
       navigate("/login");
@@ -506,31 +527,31 @@ export default function ViewClasses() {
 
     // Kiểm tra trùng lịch thời khóa biểu
     const scheduleConflict = checkScheduleConflict(classItem, userEnrollments);
-    
+
     if (scheduleConflict.hasConflict) {
       // Thông báo ngắn gọn trong UI
       showMessage(
-        `⚠️ Trùng lịch với lớp "${scheduleConflict.conflictClass.className}" vào ${scheduleConflict.conflictDay}. Không thể đăng ký!`, 
+        `⚠️ Trùng lịch với lớp "${scheduleConflict.conflictClass.className}" vào ${scheduleConflict.conflictDay}. Không thể đăng ký!`,
         "error"
       );
-      
+
       // Alert chi tiết
       setTimeout(() => {
         alert(
           `🚨 TRÙNG LỊCH THỜI KHÓA BIỂU\n\n` +
-          `❌ Không thể đăng ký lớp "${classItem.className}"\n\n` +
-          `📅 Lý do: Trùng lịch với lớp đã đăng ký\n\n` +
-          `🔄 Lớp bị trùng: "${scheduleConflict.conflictClass.className}"\n` +
-          `📅 Ngày: ${scheduleConflict.conflictDay}\n` +
-          `⏰ Thời gian trùng: ${scheduleConflict.conflictTime}\n` +
-          `🆕 Thời gian lớp mới: ${scheduleConflict.newClassTime}\n\n` +
-          `💡 Gợi ý:\n` +
-          `• Chọn lớp học khác có lịch không trùng\n` +
-          `• Liên hệ admin để được tư vấn về lịch học phù hợp\n` +
-          `• Kiểm tra lại lịch học của bạn trong "Lớp của tôi"`
+            `❌ Không thể đăng ký lớp "${classItem.className}"\n\n` +
+            `📅 Lý do: Trùng lịch với lớp đã đăng ký\n\n` +
+            `🔄 Lớp bị trùng: "${scheduleConflict.conflictClass.className}"\n` +
+            `📅 Ngày: ${scheduleConflict.conflictDay}\n` +
+            `⏰ Thời gian trùng: ${scheduleConflict.conflictTime}\n` +
+            `🆕 Thời gian lớp mới: ${scheduleConflict.newClassTime}\n\n` +
+            `💡 Gợi ý:\n` +
+            `• Chọn lớp học khác có lịch không trùng\n` +
+            `• Liên hệ admin để được tư vấn về lịch học phù hợp\n` +
+            `• Kiểm tra lại lịch học của bạn trong "Lớp của tôi"`
         );
       }, 500);
-      
+
       return; // Dừng lại, không cho phép đăng ký
     }
 
@@ -539,33 +560,44 @@ export default function ViewClasses() {
       classData: classItem,
       enrollmentType: "class",
       amount: classItem.fee || classItem.price || 0,
-      description: `Đăng ký lớp học: ${classItem.className}`
+      description: `Đăng ký lớp học: ${classItem.className}`,
     };
-    
+
     navigate("/payment", {
-      state: navigationData
+      state: navigationData,
     });
   };
 
   const filteredClasses = useMemo(() => {
-    return classes.filter(classItem => {
-      const matchesSearch = !searchTerm || 
+    return classes.filter((classItem) => {
+      const matchesSearch =
+        !searchTerm ||
         classItem.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        classItem.serviceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        classItem.instructorName?.toLowerCase().includes(searchTerm.toLowerCase());
+        classItem.serviceName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        classItem.instructorName
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
       // Cải thiện logic filter service
-      let matchesService = filterService === 'all';
-      
+      let matchesService = filterService === "all";
+
       if (!matchesService && filterService) {
         // Thử match theo serviceId hoặc service._id
-        if (classItem.serviceId === filterService || classItem.service === filterService) {
+        if (
+          classItem.serviceId === filterService ||
+          classItem.service === filterService
+        ) {
           matchesService = true;
         }
         // Thử match theo serviceName với service.name từ database
         else {
-          const selectedService = services.find(s => s._id === filterService);
-          if (selectedService && classItem.serviceName === selectedService.name) {
+          const selectedService = services.find((s) => s._id === filterService);
+          if (
+            selectedService &&
+            classItem.serviceName === selectedService.name
+          ) {
             matchesService = true;
           }
         }
@@ -649,7 +681,6 @@ export default function ViewClasses() {
                 </VintageText>
 
                 {/* Luxury Trust Indicators */}
-                
               </div>
             </VintageCard>
           </motion.div>
@@ -699,9 +730,6 @@ export default function ViewClasses() {
         >
           <VintageCard className="p-8 bg-white/95 backdrop-blur-sm border-2 border-vintage-accent/30 shadow-elegant">
             <div className="flex flex-col lg:flex-row gap-6 items-end">
-            
-            
-
               {/* Service Filter */}
               <div className="w-full lg:w-64">
                 <label className="block text-sm font-medium text-vintage-dark mb-3 vintage-sans">
@@ -722,20 +750,30 @@ export default function ViewClasses() {
                   </select>
                   {/* Custom dropdown arrow */}
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-vintage-neutral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="w-5 h-5 text-vintage-neutral"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </div>
                 </div>
               </div>
 
               {/* Clear Filters Button */}
-              {(searchTerm || filterService !== 'all') && (
+              {(searchTerm || filterService !== "all") && (
                 <VintageButton
                   variant="outline"
                   onClick={() => {
-                    setSearchTerm('');
-                    setFilterService('all');
+                    setSearchTerm("");
+                    setFilterService("all");
                   }}
                   className="px-6 py-4 border-2 border-vintage-accent/30 text-vintage-neutral hover:text-vintage-dark hover:border-vintage-accent transition-all"
                 >
@@ -749,11 +787,14 @@ export default function ViewClasses() {
             <div className="mt-6 pt-6 border-t border-vintage-accent/20">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm text-vintage-neutral vintage-sans">
-                  Hiển thị {filteredClasses.length} trong tổng số {classes.length} lớp học
+                  Hiển thị {filteredClasses.length} trong tổng số{" "}
+                  {classes.length} lớp học
                 </span>
-                {filterService !== 'all' && (
+                {filterService !== "all" && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-vintage-accent/20 text-vintage-dark">
-                    Dịch vụ: {services.find(s => s._id === filterService)?.name || 'Không xác định'}
+                    Dịch vụ:{" "}
+                    {services.find((s) => s._id === filterService)?.name ||
+                      "Không xác định"}
                   </span>
                 )}
                 {searchTerm && (
@@ -791,9 +832,11 @@ export default function ViewClasses() {
                 whileHover={{ y: -8, scale: 1.02 }}
                 className="group"
               >
-                <VintageCard className={`h-full overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-vintage-accent/30 shadow-elegant hover:shadow-golden hover:border-vintage-gold/50 transition-all duration-500 relative ${
-                  isClassEnded(classItem) ? 'opacity-70 bg-gray-50/95' : ''
-                }`}>
+                <VintageCard
+                  className={`h-full overflow-hidden bg-white/95 backdrop-blur-sm border-2 border-vintage-accent/30 shadow-elegant hover:shadow-golden hover:border-vintage-gold/50 transition-all duration-500 relative ${
+                    isClassEnded(classItem) ? "opacity-70 bg-gray-50/95" : ""
+                  }`}
+                >
                   {/* Luxury Status Badge */}
                   <div className="absolute top-6 right-6 z-10">
                     <div
@@ -827,10 +870,10 @@ export default function ViewClasses() {
                             {classItem.serviceName}
                           </VintageText>
                         </div>
-                        
+
                         {/* Class ID for reference */}
                         <div className="text-xs text-vintage-neutral/70 mb-2">
-                          ID: {classItem._id?.slice(-6) || 'N/A'}
+                          ID: {classItem._id?.slice(-6) || "N/A"}
                         </div>
                       </div>
                     </div>
@@ -843,25 +886,29 @@ export default function ViewClasses() {
                       <div className="flex items-center">
                         <Users className="h-4 w-4 text-green-600 mr-2" />
                         <div>
-                          <div className="text-xs text-vintage-neutral">Sĩ số</div>
+                          <div className="text-xs text-vintage-neutral">
+                            Sĩ số
+                          </div>
                           <div className="text-sm font-bold text-vintage-dark">
-                            {classItem.currentMembers || 0}/{classItem.maxMembers || 0}
+                            {classItem.currentMembers || 0}/
+                            {classItem.maxMembers || 0}
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Price Info */}
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 text-red-600 mr-2" />
                         <div>
-                          <div className="text-xs text-vintage-neutral">Học phí</div>
+                          <div className="text-xs text-vintage-neutral">
+                            Học phí
+                          </div>
                           <div className="text-sm font-bold text-vintage-primary">
-                            {classItem.fee 
-                              ? `${classItem.fee.toLocaleString('vi-VN')} VNĐ`
-                              : classItem.price 
-                              ? `${classItem.price.toLocaleString('vi-VN')} VNĐ`
-                              : "Liên hệ"
-                            }
+                            {classItem.fee
+                              ? `${classItem.fee.toLocaleString("vi-VN")} VNĐ`
+                              : classItem.price
+                              ? `${classItem.price.toLocaleString("vi-VN")} VNĐ`
+                              : "Liên hệ"}
                           </div>
                         </div>
                       </div>
@@ -871,76 +918,92 @@ export default function ViewClasses() {
                   {/* Class Information Summary */}
                   <div className="px-8 pb-6">
                     <div className="bg-gradient-to-r from-vintage-warm to-vintage-cream rounded-xl p-4 border border-vintage-accent/30">
-                      <VintageText variant="caption" className="text-vintage-neutral font-bold mb-3 block">
+                      <VintageText
+                        variant="caption"
+                        className="text-vintage-neutral font-bold mb-3 block"
+                      >
                         📋 Thông tin chung về lớp học
                       </VintageText>
-                      
+
                       <div className="space-y-3">
                         {/* Course Duration */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <Calendar className="h-4 w-4 text-green-600 mr-2" />
-                            <span className="text-sm text-vintage-dark">Thời gian:</span>
+                            <span className="text-sm text-vintage-dark">
+                              Thời gian:
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-vintage-primary">
-                            {new Date(classItem.startDate).toLocaleDateString("vi-VN")} - {new Date(classItem.endDate).toLocaleDateString("vi-VN")}
+                            {new Date(classItem.startDate).toLocaleDateString(
+                              "vi-VN"
+                            )}{" "}
+                            -{" "}
+                            {new Date(classItem.endDate).toLocaleDateString(
+                              "vi-VN"
+                            )}
                           </span>
                         </div>
-                        
+
                         {/* Class Schedule */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <Clock className="h-4 w-4 text-blue-600 mr-2" />
-                            <span className="text-sm text-vintage-dark">Lịch học:</span>
+                            <span className="text-sm text-vintage-dark">
+                              Lịch học:
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-vintage-dark">
                             {formatSchedule(classItem.schedule)}
                           </span>
                         </div>
-                        
+
                         {/* Instructor */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <User className="h-4 w-4 text-purple-600 mr-2" />
-                            <span className="text-sm text-vintage-dark">Huấn luyện viên:</span>
+                            <span className="text-sm text-vintage-dark">
+                              Huấn luyện viên:
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-vintage-primary">
                             {classItem.instructorName || "Chưa có"}
                           </span>
                         </div>
-                        
+
                         {/* Capacity */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <Users className="h-4 w-4 text-orange-600 mr-2" />
-                            <span className="text-sm text-vintage-dark">Sĩ số:</span>
+                            <span className="text-sm text-vintage-dark">
+                              Sĩ số:
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-vintage-dark">
-                            {classItem.currentMembers || 0}/{classItem.maxMembers || 0} học viên
+                            {classItem.currentMembers || 0}/
+                            {classItem.maxMembers || 0} học viên
                           </span>
                         </div>
-                        
+
                         {/* Price */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center">
                             <DollarSign className="h-4 w-4 text-red-600 mr-2" />
-                            <span className="text-sm text-vintage-dark">Học phí:</span>
+                            <span className="text-sm text-vintage-dark">
+                              Học phí:
+                            </span>
                           </div>
                           <span className="text-sm font-bold text-vintage-primary">
-                            {classItem.fee 
-                              ? `${classItem.fee.toLocaleString('vi-VN')} VNĐ`
-                              : classItem.price 
-                              ? `${classItem.price.toLocaleString('vi-VN')} VNĐ`
-                              : "Liên hệ"
-                            }
+                            {classItem.fee
+                              ? `${classItem.fee.toLocaleString("vi-VN")} VNĐ`
+                              : classItem.price
+                              ? `${classItem.price.toLocaleString("vi-VN")} VNĐ`
+                              : "Liên hệ"}
                           </span>
                         </div>
                       </div>
                     </div>
-
                   </div>
-
-
 
                   {/* Action Section */}
                   <div className="px-8 pb-8 mt-auto">
@@ -955,8 +1018,8 @@ export default function ViewClasses() {
                               disabled
                               className="w-full bg-green-50 border-2 border-green-300 text-green-700 font-bold py-3"
                             >
-                              <CheckCircle className="h-5 w-5 mr-2" />
-                              ✅ Đã tham gia lớp
+                              <CheckCircle className="h-5 w-5 mr-2" />✅ Đã tham
+                              gia lớp
                             </VintageButton>
                           ) : isEnrolled && hasPendingPayment(classItem) ? (
                             <VintageButton
@@ -965,8 +1028,8 @@ export default function ViewClasses() {
                               disabled
                               className="w-full bg-yellow-50 border-2 border-yellow-300 text-yellow-700 font-bold py-3"
                             >
-                              <Clock className="h-5 w-5 mr-2" />
-                              ⏳ Chờ admin xác nhận
+                              <Clock className="h-5 w-5 mr-2" />⏳ Chờ admin xác
+                              nhận
                             </VintageButton>
                           ) : isClassEnded(classItem) ? (
                             <VintageButton
@@ -985,19 +1048,19 @@ export default function ViewClasses() {
                               disabled
                               className="w-full bg-red-50 border-2 border-red-300 text-red-700 font-bold py-3"
                             >
-                              <XCircle className="h-5 w-5 mr-2" />
-                              ❌ Hết chỗ ({classItem.currentMembers}/{classItem.maxMembers})
+                              <XCircle className="h-5 w-5 mr-2" />❌ Hết chỗ (
+                              {classItem.currentMembers}/{classItem.maxMembers})
                             </VintageButton>
                           ) : canEnrollInClass(classItem) ? (
                             <VintageButton
-                              variant="primary"
+                              variant="secondary"
                               size="md"
                               onClick={() => handleEnrollRedirect(classItem)}
-                              className="w-full bg-gradient-to-r from-vintage-primary to-vintage-secondary hover:from-vintage-secondary hover:to-vintage-primary text-white border-0 shadow-lg hover:shadow-xl font-bold py-3 transform hover:scale-105 transition-all duration-300"
+                              className="w-full bg-vintage-primary from-vintage-primary to-vintage-secondary hover:from-vintage-secondary hover:to-vintage-primary text-white border-0 shadow-lg hover:shadow-xl font-bold py-3 transform hover:scale-105 transition-all duration-300"
                             >
                               <div className="flex items-center justify-center">
                                 <DollarSign className="h-5 w-5 mr-2" />
-                                🎯 Đăng ký lớp học 
+                                Đăng ký lớp học
                               </div>
                             </VintageButton>
                           ) : (
@@ -1023,12 +1086,9 @@ export default function ViewClasses() {
                           </VintageButton>
                         )}
                       </div>
-
-                      
                     </div>
                   </div>
 
-                  {/* Luxury Progress Bar */}
                   {classItem.status === "ongoing" &&
                     classItem.currentSession &&
                     classItem.totalSessions && (
@@ -1102,8 +1162,7 @@ export default function ViewClasses() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           className="mt-20"
-        >
-        </motion.div>
+        ></motion.div>
       </VintageContainer>
 
       {/* Luxury Detail Modal */}
@@ -1160,16 +1219,21 @@ export default function ViewClasses() {
                   {/* Existing trainer and enrollment info */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-4">
-                      <div 
+                      <div
                         className="flex items-center cursor-pointer hover:bg-purple-50 p-3 rounded-lg transition-colors"
                         onClick={() => {
-                          console.log('Opening trainer modal for:', selectedClass.instructorName);
+                          console.log(
+                            "Opening trainer modal for:",
+                            selectedClass.instructorName
+                          );
                           setShowTrainerModal(true);
                         }}
                       >
                         <User className="h-5 w-5 text-purple-600 mr-3" />
                         <div>
-                          <div className="text-sm text-gray-600">Huấn luyện viên</div>
+                          <div className="text-sm text-gray-600">
+                            Huấn luyện viên
+                          </div>
                           <div className="font-semibold text-purple-600 hover:text-purple-800">
                             {selectedClass.instructorName || "Chưa có"}
                           </div>
@@ -1183,7 +1247,8 @@ export default function ViewClasses() {
                         <div>
                           <div className="text-sm text-gray-600">Sĩ số lớp</div>
                           <div className="font-semibold">
-                            {selectedClass.currentMembers || 0}/{selectedClass.maxMembers || 0} học viên
+                            {selectedClass.currentMembers || 0}/
+                            {selectedClass.maxMembers || 0} học viên
                           </div>
                         </div>
                       </div>
@@ -1194,12 +1259,15 @@ export default function ViewClasses() {
                         <div>
                           <div className="text-sm text-gray-600">Học phí</div>
                           <div className="font-semibold text-vintage-primary">
-                            {selectedClass.fee 
-                              ? `${selectedClass.fee.toLocaleString('vi-VN')} VNĐ`
-                              : selectedClass.price 
-                              ? `${selectedClass.price.toLocaleString('vi-VN')} VNĐ`
-                              : "Liên hệ"
-                            }
+                            {selectedClass.fee
+                              ? `${selectedClass.fee.toLocaleString(
+                                  "vi-VN"
+                                )} VNĐ`
+                              : selectedClass.price
+                              ? `${selectedClass.price.toLocaleString(
+                                  "vi-VN"
+                                )} VNĐ`
+                              : "Liên hệ"}
                           </div>
                         </div>
                       </div>
@@ -1208,10 +1276,11 @@ export default function ViewClasses() {
                         <div>
                           <div className="text-sm text-gray-600">Tiến độ</div>
                           <div className="font-semibold">
-                            {selectedClass.totalSessions 
-                              ? `${selectedClass.currentSession || 0}/${selectedClass.totalSessions} buổi`
-                              : "Chưa xác định"
-                            }
+                            {selectedClass.totalSessions
+                              ? `${selectedClass.currentSession || 0}/${
+                                  selectedClass.totalSessions
+                                } buổi`
+                              : "Chưa xác định"}
                           </div>
                         </div>
                       </div>
@@ -1219,29 +1288,39 @@ export default function ViewClasses() {
                   </div>
 
                   {/* Warning about schedule conflicts */}
-                  {user && (() => {
-                    const conflict = checkScheduleConflict(selectedClass, userEnrollments);
-                    if (conflict.hasConflict) {
-                      return (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <div className="flex items-start">
-                            <AlertCircle className="h-5 w-5 text-red-600 mr-2 mt-0.5" />
-                            <div>
-                              <h4 className="font-semibold text-red-800 mb-2">⚠️ Cảnh báo trùng lịch</h4>
-                              <p className="text-red-700 text-sm mb-2">
-                                Lớp này trùng lịch với lớp <strong>"{conflict.conflictClass.className}"</strong> 
-                                vào {conflict.conflictDay} ({conflict.conflictTime})
-                              </p>
-                              <p className="text-red-600 text-xs">
-                                ❌ Không thể đăng ký do trùng thời khóa biểu
-                              </p>
+                  {user &&
+                    (() => {
+                      const conflict = checkScheduleConflict(
+                        selectedClass,
+                        userEnrollments
+                      );
+                      if (conflict.hasConflict) {
+                        return (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-start">
+                              <AlertCircle className="h-5 w-5 text-red-600 mr-2 mt-0.5" />
+                              <div>
+                                <h4 className="font-semibold text-red-800 mb-2">
+                                  ⚠️ Cảnh báo trùng lịch
+                                </h4>
+                                <p className="text-red-700 text-sm mb-2">
+                                  Lớp này trùng lịch với lớp{" "}
+                                  <strong>
+                                    "{conflict.conflictClass.className}"
+                                  </strong>
+                                  vào {conflict.conflictDay} (
+                                  {conflict.conflictTime})
+                                </p>
+                                <p className="text-red-600 text-xs">
+                                  ❌ Không thể đăng ký do trùng thời khóa biểu
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
+                        );
+                      }
+                      return null;
+                    })()}
 
                   {/* Description */}
                   {selectedClass.description && (
@@ -1272,7 +1351,8 @@ export default function ViewClasses() {
                   </VintageButton>
                   {user && (
                     <>
-                      {isUserEnrolled(selectedClass._id) && hasConfirmedPayment(selectedClass) ? (
+                      {isUserEnrolled(selectedClass._id) &&
+                      hasConfirmedPayment(selectedClass) ? (
                         <VintageButton
                           variant="secondary"
                           disabled
@@ -1280,7 +1360,8 @@ export default function ViewClasses() {
                         >
                           ✅ Đã tham gia
                         </VintageButton>
-                      ) : isUserEnrolled(selectedClass._id) && hasPendingPayment(selectedClass) ? (
+                      ) : isUserEnrolled(selectedClass._id) &&
+                        hasPendingPayment(selectedClass) ? (
                         <VintageButton
                           variant="secondary"
                           disabled
@@ -1352,12 +1433,15 @@ const ScheduleInfo = ({ schedule }) => {
     return <span className="text-gray-500 italic">Chưa có lịch học</span>;
   }
 
-  const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-  
+  const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+
   return (
     <div className="space-y-2">
       {schedule.map((slot, index) => (
-        <div key={index} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-lg">
+        <div
+          key={index}
+          className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-lg"
+        >
           <div className="flex items-center">
             <Calendar className="h-4 w-4 text-blue-600 mr-2" />
             <span className="font-medium text-blue-900">
