@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "../../config/axios";
+import { setToken, debugTokenIssues } from "../../utils/tokenUtils";
+import { cleanupLocalStorage } from "../../utils/authCleanup";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -40,8 +42,16 @@ export default function Login({ setUser }) {
 
       const { token, user } = response.data;
 
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+      // Use the improved token setting function
+      if (setToken(token)) {
+        localStorage.setItem("user", JSON.stringify(user));
+      } else {
+        console.error(
+          "Failed to set token - received invalid token from server"
+        );
+        setError("Lỗi đăng nhập: Token không hợp lệ");
+        return;
+      }
 
       try {
         const userResponse = await axios.get(
@@ -62,10 +72,14 @@ export default function Login({ setUser }) {
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
-      
+
       // Kiểm tra nếu tài khoản bị khóa
       if (error.response?.status === 403 && error.response?.data?.isLocked) {
-        setError(`Tài khoản đã bị khóa: ${error.response.data.reason || 'Tài khoản bị khóa bởi admin'}`);
+        setError(
+          `Tài khoản đã bị khóa: ${
+            error.response.data.reason || "Tài khoản bị khóa bởi admin"
+          }`
+        );
       } else {
         setError(
           error.response?.data?.message ||
@@ -85,10 +99,14 @@ export default function Login({ setUser }) {
           tokenId: credentialResponse.credential,
         }
       );
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      setUser(res.data.user);
-      navigate("/");
+      if (setToken(res.data.token)) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setUser(res.data.user);
+        navigate("/");
+      } else {
+        console.error("Failed to set token from Google login");
+        setError("Lỗi đăng nhập Google: Token không hợp lệ");
+      }
     } catch (err) {
       setError("Đăng nhập Google thất bại");
     }
@@ -365,6 +383,23 @@ export default function Login({ setUser }) {
                       </>
                     )}
                   </button>
+
+                  {/* Debug/Cleanup Button */}
+                  {error && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cleanupLocalStorage();
+                        setError("");
+                        console.log(
+                          "LocalStorage cleaned, please try logging in again"
+                        );
+                      }}
+                      className="w-full mt-3 py-2 px-4 border border-vintage-accent/50 text-vintage-accent hover:bg-vintage-accent/10 rounded-xl transition-all duration-300 text-sm"
+                    >
+                      Xóa dữ liệu lỗi và thử lại
+                    </button>
+                  )}
                 </motion.div>
               </motion.form>
 

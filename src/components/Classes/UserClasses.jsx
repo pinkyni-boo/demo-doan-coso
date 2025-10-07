@@ -24,8 +24,8 @@ import {
   Star,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import ClassFeedbackModal from './ClassFeedbackModal';
-import ViewFeedbackModal from './ViewFeedbackModal';
+import ClassFeedbackModal from "./ClassFeedbackModal";
+import ViewFeedbackModal from "./ViewFeedbackModal";
 
 export default function UserClasses() {
   // History view toggle
@@ -41,7 +41,8 @@ export default function UserClasses() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [attendanceData, setAttendanceData] = useState({});
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [selectedClassForFeedback, setSelectedClassForFeedback] = useState(null);
+  const [selectedClassForFeedback, setSelectedClassForFeedback] =
+    useState(null);
   const [ratedClasses, setRatedClasses] = useState(new Set());
   const [showViewFeedbackModal, setShowViewFeedbackModal] = useState(false);
   const [selectedFeedbackToView, setSelectedFeedbackToView] = useState(null);
@@ -165,7 +166,7 @@ export default function UserClasses() {
       // Extract class IDs and store feedback data
       const ratedClassIds = new Set();
       const feedbacksByClass = {};
-      
+
       if (response.data.feedbacks && Array.isArray(response.data.feedbacks)) {
         response.data.feedbacks.forEach((feedback) => {
           if (feedback.class) {
@@ -282,11 +283,11 @@ export default function UserClasses() {
 
   // Feedback handling functions
   const handleOpenFeedback = (enrollment) => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
     // Allow both regular users and admins to write feedback
-    if (!user.role || (user.role !== 'user' && user.role !== 'admin')) {
-      toast.info('Bạn không có quyền viết đánh giá');
+    if (!user.role || (user.role !== "user" && user.role !== "admin")) {
+      toast.info("Bạn không có quyền viết đánh giá");
       return;
     }
 
@@ -301,40 +302,44 @@ export default function UserClasses() {
 
   const handleFeedbackSubmitted = () => {
     // Store class info before clearing state
-    const classInfo = selectedClassForFeedback ? {
-      _id: selectedClassForFeedback._id,
-      className: selectedClassForFeedback.className
-    } : null;
-    
+    const classInfo = selectedClassForFeedback
+      ? {
+          _id: selectedClassForFeedback._id,
+          className: selectedClassForFeedback.className,
+        }
+      : null;
+
     // Add the class to rated classes set
     if (classInfo?._id) {
-      setRatedClasses(prev => new Set([...prev, classInfo._id]));
+      setRatedClasses((prev) => new Set([...prev, classInfo._id]));
     }
-    
+
     // Close the feedback modal first
     setShowFeedbackModal(false);
     setSelectedClassForFeedback(null);
-    
+
     // Show success message
-    toast.success('Đánh giá đã được gửi thành công! Đang chuyển đến trang đánh giá...');
-    
+    toast.success(
+      "Đánh giá đã được gửi thành công! Đang chuyển đến trang đánh giá..."
+    );
+
     // Refresh feedback data and navigate to feedback page
     setTimeout(() => {
       fetchUserRatedClasses();
-      
+
       if (classInfo) {
         // Navigate to feedback page with "Tất cả đánh giá" tab (showMyFeedback: false)
-        navigate('/feedback', { 
-          state: { 
-            classId: classInfo._id, 
+        navigate("/feedback", {
+          state: {
+            classId: classInfo._id,
             className: classInfo.className,
             filterByClass: true,
-            showMyFeedback: false // Chuyển sang tab "Tất cả đánh giá"
-          } 
+            showMyFeedback: false, // Chuyển sang tab "Tất cả đánh giá"
+          },
         });
       } else {
         // Fallback navigation without specific class
-        navigate('/feedback');
+        navigate("/feedback");
       }
     }, 1500);
   };
@@ -373,10 +378,18 @@ export default function UserClasses() {
     if (!showHistory) {
       if (enrollment.class?.status === "completed") return false;
       if (filterStatus === "all") return true;
-      if (filterStatus === "paid") return enrollment.paymentStatus && enrollment.class?.status !== "completed";
-      if (filterStatus === "pending") return !enrollment.paymentStatus && enrollment.class?.status !== "completed";
-      if (filterStatus === "ongoing") return enrollment.class?.status === "ongoing";
-      if (filterStatus === "upcoming") return enrollment.class?.status === "upcoming";
+      if (filterStatus === "paid")
+        return (
+          enrollment.paymentStatus && enrollment.class?.status !== "completed"
+        );
+      if (filterStatus === "pending")
+        return (
+          !enrollment.paymentStatus && enrollment.class?.status !== "completed"
+        );
+      if (filterStatus === "ongoing")
+        return enrollment.class?.status === "ongoing";
+      if (filterStatus === "upcoming")
+        return enrollment.class?.status === "upcoming";
       return true;
     } else {
       // History view: only completed classes
@@ -452,12 +465,14 @@ export default function UserClasses() {
                 <button
                   className={`px-5 py-2 rounded-lg font-medium transition-all duration-200 border border-vintage-gold/40 shadow-soft ${
                     showHistory
-                      ? "bg-vintage-gold text-white hover:bg-vintage-gold/90"
+                      ? "bg-vintage-gold text-yellow hover:bg-vintage-gold/90"
                       : "bg-white text-vintage-gold hover:bg-vintage-gold/10"
                   }`}
                   onClick={() => setShowHistory((prev) => !prev)}
                 >
-                  {showHistory ? "Quay lại lớp hiện tại" : "Xem lịch sử lớp học"}
+                  {showHistory
+                    ? "Quay lại lớp hiện tại"
+                    : "Xem lịch sử lớp học"}
                 </button>
               </div>
             </div>
@@ -465,7 +480,6 @@ export default function UserClasses() {
         </motion.div>
 
         {/* Enhanced Statistics */}
-       
 
         {/* Enhanced Filters */}
         <motion.div variants={itemVariants} className="mb-6">
@@ -666,8 +680,8 @@ export default function UserClasses() {
 
                         <div className="flex items-center gap-2">
                           {/* Feedback button logic for completed classes in history view */}
-                          {enrollment.class?.status === 'completed' && (
-                            ratedClasses.has(enrollment.class._id) ? (
+                          {enrollment.class?.status === "completed" &&
+                            (ratedClasses.has(enrollment.class._id) ? (
                               <div className="flex items-center gap-2">
                                 <span className="flex items-center text-green-600 font-medium text-sm vintage-sans">
                                   <Star className="h-4 w-4 mr-1 fill-current" />
@@ -689,9 +703,8 @@ export default function UserClasses() {
                                 <Star className="h-4 w-4 mr-1" />
                                 Đánh giá
                               </button>
-                            )
-                          )}
-                          
+                            ))}
+
                           <button
                             onClick={() => {
                               setSelectedEnrollment(enrollment);

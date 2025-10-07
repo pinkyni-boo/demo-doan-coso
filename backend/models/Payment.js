@@ -54,6 +54,10 @@ const PaymentSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    approvedBy: {
+      type: String,
+      default: null,
+    },
   },
   { timestamps: true }
 );

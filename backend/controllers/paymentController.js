@@ -48,7 +48,7 @@ export const createPayment = async (req, res) => {
 export const getPayments = async (req, res) => {
   try {
     const userId = req.user._id;
-    
+
     // Admin có thể xem tất cả payments của mình như user bình thường
     const payments = await Payment.find({ user: userId }).sort({
       createdAt: -1,
@@ -82,7 +82,13 @@ export const approvePayment = async (req, res) => {
     const { paymentId } = req.params;
     const { registrationIds } = req.body;
 
-    // ...existing code...
+    console.log("Approving payment:", paymentId);
+    console.log("Registration IDs received:", registrationIds);
+
+    // Validate paymentId
+    if (!paymentId) {
+      return res.status(400).json({ message: "Payment ID is required" });
+    }
 
     // Tìm payment
     const payment = await Payment.findById(paymentId);
@@ -90,49 +96,120 @@ export const approvePayment = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy thanh toán" });
     }
 
-  // Cập nhật trạng thái payment
-  payment.status = "approved"; // Đổi sang 'approved' để thống kê doanh thu
-  payment.completedAt = new Date();
-  payment.approvedBy = req.user.username || req.user._id;
-  await payment.save();
+    console.log("Found payment:", payment._id, "status:", payment.status);
 
-    // Cập nhật paymentStatus cho các ClassEnrollment
+    // Check if payment is already completed
+    if (payment.status === "completed") {
+      return res
+        .status(400)
+        .json({ message: "Thanh toán đã được xác nhận trước đó" });
+    }
+
+    // Cập nhật trạng thái payment
+    payment.status = "completed";
+    payment.completedAt = new Date();
+    payment.approvedBy = req.user.username || req.user._id;
+    await payment.save();
+
+    console.log("Payment updated successfully");
+
+    // Cập nhật paymentStatus cho các ClassEnrollment hoặc Membership
+    const updateResults = [];
+
     if (registrationIds && registrationIds.length > 0) {
       for (const regId of registrationIds) {
         try {
+          console.log("Processing registration ID:", regId);
+
+          if (!regId) {
+            console.warn("Skipping empty registration ID");
+            continue;
+          }
+
           // Kiểm tra xem regId là ClassEnrollment hay Membership
           const classEnrollment = await ClassEnrollment.findById(regId);
 
           if (classEnrollment) {
-            // Cập nhật trạng thái thanh toán cho ClassEnrollment
+            console.log("Found class enrollment:", classEnrollment._id);
             classEnrollment.paymentStatus = true;
             await classEnrollment.save();
-            // ...existing code...
+            updateResults.push({ type: "class", id: regId, success: true });
+
+            // Gửi thông báo cho user về việc xác nhận thanh toán
+            try {
+              await NotificationService.notifyUserPaymentConfirmed(
+                payment,
+                classEnrollment
+              );
+            } catch (notifyError) {
+              console.error(
+                "Error sending class enrollment notification:",
+                notifyError
+              );
+            }
           } else {
             // Kiểm tra xem có phải Membership không
             const membership = await Membership.findById(regId);
             if (membership) {
+              console.log("Found membership:", membership._id);
               membership.paymentStatus = true;
               membership.status = "active";
               await membership.save();
-              // ...existing code...
+              updateResults.push({
+                type: "membership",
+                id: regId,
+                success: true,
+              });
+
+              // Gửi thông báo cho user về việc kích hoạt membership
+              try {
+                await NotificationService.notifyUserMembershipActivated(
+                  payment,
+                  membership
+                );
+              } catch (notifyError) {
+                console.error(
+                  "Error sending membership notification:",
+                  notifyError
+                );
+              }
             } else {
-              // ...existing code...
+              console.warn(
+                "Registration ID not found in ClassEnrollment or Membership:",
+                regId
+              );
+              updateResults.push({
+                type: "unknown",
+                id: regId,
+                success: false,
+              });
             }
           }
         } catch (error) {
           console.error("Error updating registration:", regId, error);
+          updateResults.push({
+            type: "error",
+            id: regId,
+            success: false,
+            error: error.message,
+          });
         }
       }
     }
 
+    console.log("Update results:", updateResults);
+
     res.json({
       message: "Xác nhận thanh toán thành công",
       payment,
+      updateResults,
     });
   } catch (error) {
     console.error("Error approving payment:", error);
-    res.status(500).json({ message: "Lỗi server khi xác nhận thanh toán" });
+    res.status(500).json({
+      message: "Lỗi server khi xác nhận thanh toán",
+      error: error.message,
+    });
   }
 };
 
@@ -149,6 +226,51 @@ export const rejectPayment = async (req, res) => {
     payment.status = "cancelled";
     payment.rejectionReason = rejectionReason || "Admin từ chối thanh toán";
     await payment.save();
+
+    // Cập nhật trạng thái đăng ký khi từ chối thanh toán
+    if (payment.registrationIds && payment.registrationIds.length > 0) {
+      try {
+        if (payment.paymentType === "class" || payment.paymentType === "membership_and_class") {
+          // Cập nhật trạng thái ClassEnrollment
+          await ClassEnrollment.updateMany(
+            { _id: { $in: payment.registrationIds } },
+            { 
+              paymentStatus: false,
+              status: "cancelled"
+            }
+          );
+          console.log(`Updated ${payment.registrationIds.length} class enrollments to cancelled status`);
+        } else if (payment.paymentType === "membership" || payment.paymentType === "membership_upgrade") {
+          // Cập nhật trạng thái Membership
+          await Membership.updateMany(
+            { _id: { $in: payment.registrationIds } },
+            { 
+              paymentStatus: false,
+              status: "cancelled"
+            }
+          );
+          console.log(`Updated ${payment.registrationIds.length} memberships to cancelled status`);
+        }
+      } catch (updateError) {
+        console.error("Error updating registration status:", updateError);
+        // Không throw error để không làm gián đoạn quá trình reject payment
+      }
+    }
+
+    // Gửi thông báo cho user về việc từ chối thanh toán
+    try {
+      await NotificationService.notifyUserPaymentRejected(
+        payment,
+        rejectionReason
+      );
+      console.log("Payment rejection notification sent successfully");
+    } catch (notifyError) {
+      console.error(
+        "Error sending payment rejection notification:",
+        notifyError
+      );
+      // Không throw error để không làm gián đoạn quá trình reject
+    }
 
     res.json({
       message: "Từ chối thanh toán thành công",
@@ -489,31 +611,31 @@ export const getPaymentStats = async (req, res) => {
   try {
     // Tính tổng doanh thu từ các thanh toán đã được duyệt
     const revenueStats = await Payment.aggregate([
-      { $match: { status: "approved" } },
+      { $match: { status: "completed" } },
       {
         $group: {
           _id: null,
           totalRevenue: { $sum: "$amount" },
-          totalPayments: { $sum: 1 }
-        }
-      }
+          totalPayments: { $sum: 1 },
+        },
+      },
     ]);
 
     // Thống kê theo tháng
     const monthlyStats = await Payment.aggregate([
-      { $match: { status: "approved" } },
+      { $match: { status: "completed" } },
       {
         $group: {
           _id: {
             year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" }
+            month: { $month: "$createdAt" },
           },
           revenue: { $sum: "$amount" },
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       { $sort: { "_id.year": -1, "_id.month": -1 } },
-      { $limit: 12 }
+      { $limit: 12 },
     ]);
 
     // Thống kê theo trạng thái
@@ -522,13 +644,15 @@ export const getPaymentStats = async (req, res) => {
         $group: {
           _id: "$status",
           count: { $sum: 1 },
-          totalAmount: { $sum: "$amount" }
-        }
-      }
+          totalAmount: { $sum: "$amount" },
+        },
+      },
     ]);
 
-    const totalRevenue = revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
-    const totalPayments = revenueStats.length > 0 ? revenueStats[0].totalPayments : 0;
+    const totalRevenue =
+      revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
+    const totalPayments =
+      revenueStats.length > 0 ? revenueStats[0].totalPayments : 0;
 
     res.json({
       success: true,
@@ -536,14 +660,14 @@ export const getPaymentStats = async (req, res) => {
         totalRevenue,
         totalPayments,
         monthlyStats,
-        statusStats
-      }
+        statusStats,
+      },
     });
   } catch (error) {
     console.error("Error fetching payment stats:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi server khi lấy thống kê thanh toán"
+      message: "Lỗi server khi lấy thống kê thanh toán",
     });
   }
 };
