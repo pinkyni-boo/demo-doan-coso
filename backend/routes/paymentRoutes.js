@@ -16,6 +16,7 @@ import {
   deleteEnrollment,
   deletePaymentEnrollment, // Thêm dòng này
   getPaymentStats,
+  resendRejectionNotification, // Thêm function mới
 } from "../controllers/paymentController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -48,6 +49,14 @@ router.delete(
 router.put("/approve/:paymentId", verifyToken, verifyAdmin, approvePayment);
 router.put("/reject/:paymentId", verifyToken, verifyAdmin, rejectPayment);
 router.put("/cancel/:paymentId", verifyToken, cancelPayment);
+
+// Resend notification for rejected payment
+router.post(
+  "/resend-notification/:paymentId",
+  verifyToken,
+  verifyAdmin,
+  resendRejectionNotification
+);
 
 // Parameter routes with details
 router.get("/:paymentId/details", verifyToken, getPaymentDetails);

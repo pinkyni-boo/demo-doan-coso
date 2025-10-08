@@ -132,9 +132,9 @@ export default function Login({ setUser }) {
     <div className="min-h-screen bg-gradient-to-br from-vintage-cream via-vintage-warm to-vintage-cream flex items-center justify-center px-4 py-12 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-vintage-gold rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-vintage-accent rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-vintage-primary rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-orange-500 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-orange-600 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-orange-700 rounded-full blur-3xl opacity-30"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
@@ -146,8 +146,8 @@ export default function Login({ setUser }) {
           transition={{ duration: 0.5 }}
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-vintage-gold to-vintage-accent rounded-3xl blur-2xl opacity-30"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 border-2 border-vintage-gold/30 shadow-elegant">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-700 rounded-3xl blur-2xl opacity-30"></div>
+            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 border-2 border-orange-500/30 shadow-elegant">
               {/* Logo Icon with enhanced styling */}
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
@@ -156,10 +156,10 @@ export default function Login({ setUser }) {
                 className="relative w-24 h-24 mx-auto mb-6"
               >
                 {/* Outer glow ring */}
-                <div className="absolute inset-0 bg-gradient-to-r from-vintage-gold to-vintage-accent rounded-full blur-lg opacity-40 animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full blur-lg opacity-40 animate-pulse"></div>
 
                 {/* Main logo container */}
-                <div className="relative w-full h-full bg-gradient-to-br from-vintage-gold via-vintage-accent to-vintage-primary rounded-full flex items-center justify-center shadow-golden border-4 border-white/20">
+                <div className="relative w-full h-full bg-gradient-to-br from-orange-500 via-orange-600 to-orange-800 rounded-full flex items-center justify-center shadow-golden border-4 border-white/20">
                   {/* Inner decorative ring */}
                   <div className="absolute inset-2 border-2 border-white/30 rounded-full"></div>
 
@@ -181,10 +181,10 @@ export default function Login({ setUser }) {
                   }}
                   className="absolute inset-0"
                 >
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-vintage-gold rounded-full opacity-60"></div>
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-vintage-accent rounded-full opacity-40"></div>
-                  <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 w-2.5 h-2.5 bg-vintage-primary rounded-full opacity-50"></div>
-                  <div className="absolute top-1/2 -right-1 transform -translate-y-1/2 w-2 h-2 bg-vintage-gold rounded-full opacity-30"></div>
+                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-orange-500 rounded-full opacity-60"></div>
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-orange-600 rounded-full opacity-40"></div>
+                  <div className="absolute top-1/2 -left-1 transform -translate-y-1/2 w-2.5 h-2.5 bg-orange-700 rounded-full opacity-50"></div>
+                  <div className="absolute top-1/2 -right-1 transform -translate-y-1/2 w-2 h-2 bg-orange-500 rounded-full opacity-30"></div>
                 </motion.div>
               </motion.div>
 

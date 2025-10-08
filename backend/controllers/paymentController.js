@@ -217,64 +217,128 @@ export const rejectPayment = async (req, res) => {
     const { paymentId } = req.params;
     const { rejectionReason } = req.body;
 
-    const payment = await Payment.findById(paymentId);
+    // Tìm payment và populate user info để gửi thông báo
+    const payment = await Payment.findById(paymentId).populate(
+      "user",
+      "username email fullName"
+    );
     if (!payment) {
       return res.status(404).json({ message: "Không tìm thấy thanh toán" });
     }
 
+    // Kiểm tra xem payment đã bị từ chối hay chưa
+    if (payment.status === "cancelled") {
+      return res
+        .status(400)
+        .json({ message: "Thanh toán đã bị từ chối trước đó" });
+    }
+
+    // Cập nhật trạng thái payment
     payment.status = "cancelled";
     payment.rejectionReason = rejectionReason || "Admin từ chối thanh toán";
+    payment.rejectedAt = new Date();
+    payment.rejectedBy = req.user.username || req.user._id;
     await payment.save();
 
+    console.log(`Payment ${paymentId} rejected by admin:`, req.user.username);
+
+    // Trả về trạng thái ban đầu cho các đăng ký
+    const updateResults = [];
+
     if (payment.registrationIds && payment.registrationIds.length > 0) {
-      try {
-        if (
-          payment.paymentType === "class" ||
-          payment.paymentType === "membership_and_class"
-        ) {
-          // Cập nhật trạng thái ClassEnrollment
-          await ClassEnrollment.updateMany(
-            { _id: { $in: payment.registrationIds } },
-            {
-              paymentStatus: false,
-              status: "cancelled",
+      for (const regId of payment.registrationIds) {
+        try {
+          console.log("Processing registration ID for rejection:", regId);
+
+          if (!regId) {
+            console.warn("Skipping empty registration ID");
+            continue;
+          }
+
+          // Kiểm tra ClassEnrollment
+          const classEnrollment = await ClassEnrollment.findById(regId);
+          if (classEnrollment) {
+            // Trả về trạng thái ban đầu: paymentStatus = false và xóa đăng ký
+            await ClassEnrollment.findByIdAndDelete(regId);
+            updateResults.push({
+              type: "class",
+              id: regId,
+              success: true,
+              action: "deleted",
+            });
+            console.log(
+              `Deleted class enrollment ${regId} due to payment rejection`
+            );
+          } else {
+            // Kiểm tra Membership
+            const membership = await Membership.findById(regId);
+            if (membership) {
+              // Trả về trạng thái ban đầu: pending_payment và paymentStatus = false
+              membership.status = "pending_payment";
+              membership.paymentStatus = false;
+              await membership.save();
+              updateResults.push({
+                type: "membership",
+                id: regId,
+                success: true,
+                action: "reset_to_pending",
+              });
+              console.log(
+                `Reset membership ${regId} to pending_payment status`
+              );
+            } else {
+              console.warn(
+                "Registration ID not found in ClassEnrollment or Membership:",
+                regId
+              );
+              updateResults.push({
+                type: "unknown",
+                id: regId,
+                success: false,
+                error: "Not found",
+              });
             }
-          );
-          console.log(
-            `Updated ${payment.registrationIds.length} class enrollments to cancelled status`
-          );
-        } else if (
-          payment.paymentType === "membership" ||
-          payment.paymentType === "membership_upgrade"
-        ) {
-          // Cập nhật trạng thái Membership
-          await Membership.updateMany(
-            { _id: { $in: payment.registrationIds } },
-            {
-              paymentStatus: false,
-              status: "cancelled",
-            }
-          );
-          console.log(
-            `Updated ${payment.registrationIds.length} memberships to cancelled status`
-          );
+          }
+        } catch (error) {
+          console.error("Error updating registration:", regId, error);
+          updateResults.push({
+            type: "error",
+            id: regId,
+            success: false,
+            error: error.message,
+          });
         }
-      } catch (updateError) {
-        console.error("Error updating registration status:", updateError);
-        // Không throw error để không làm gián đoạn quá trình reject payment
       }
     }
 
-    // Gửi thông báo cho user về việc từ chối thanh toán
+    console.log("Rejection update results:", updateResults);
+
+    // Gửi thông báo chi tiết cho user về việc từ chối thanh toán
+    let notificationSent = false;
+    let notificationError = null;
+
     try {
-      await NotificationService.notifyUserPaymentRejected(
+      console.log(
+        "Sending payment rejection notification to user:",
+        payment.user.username
+      );
+
+      const notification = await NotificationService.notifyUserPaymentRejected(
         payment,
         rejectionReason
       );
-      console.log("Payment rejection notification sent successfully");
+
+      notificationSent = true;
+      console.log(
+        "✅ Payment rejection notification sent successfully to user:",
+        payment.user.username,
+        "- Notification ID:",
+        notification._id
+      );
     } catch (notifyError) {
+      notificationError = notifyError.message;
       console.error(
-        "Error sending payment rejection notification:",
+        "❌ Error sending payment rejection notification:",
         notifyError
       );
       // Không throw error để không làm gián đoạn quá trình reject
@@ -283,10 +347,21 @@ export const rejectPayment = async (req, res) => {
     res.json({
       message: "Từ chối thanh toán thành công",
       payment,
+      updateResults,
+      notification: {
+        sent: notificationSent,
+        message: notificationSent
+          ? "Đã gửi thông báo chi tiết cho người dùng"
+          : "Không thể gửi thông báo",
+        error: notificationError,
+      },
     });
   } catch (error) {
     console.error("Error rejecting payment:", error);
-    res.status(500).json({ message: "Lỗi server khi từ chối thanh toán" });
+    res.status(500).json({
+      message: "Lỗi server khi từ chối thanh toán",
+      error: error.message,
+    });
   }
 };
 
@@ -676,6 +751,80 @@ export const getPaymentStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Lỗi server khi lấy thống kê thanh toán",
+    });
+  }
+};
+
+// Gửi lại thông báo từ chối thanh toán
+export const resendRejectionNotification = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    // Tìm payment đã bị reject
+    const payment = await Payment.findById(paymentId).populate(
+      "user",
+      "username email fullName"
+    );
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy thanh toán",
+      });
+    }
+
+    if (payment.status !== "cancelled") {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể gửi lại thông báo cho thanh toán đã bị từ chối",
+      });
+    }
+
+    // Gửi lại thông báo
+    try {
+      console.log(
+        "Resending payment rejection notification to user:",
+        payment.user.username
+      );
+
+      const notification = await NotificationService.notifyUserPaymentRejected(
+        payment,
+        payment.rejectionReason || "Thanh toán không được chấp nhận"
+      );
+
+      console.log(
+        "✅ Payment rejection notification resent successfully to user:",
+        payment.user.username,
+        "- Notification ID:",
+        notification._id
+      );
+
+      res.json({
+        success: true,
+        message: "Đã gửi lại thông báo thành công",
+        notification: {
+          id: notification._id,
+          recipient: payment.user.username,
+          title: notification.title,
+        },
+      });
+    } catch (notifyError) {
+      console.error(
+        "❌ Error resending payment rejection notification:",
+        notifyError
+      );
+      res.status(500).json({
+        success: false,
+        message: "Không thể gửi lại thông báo",
+        error: notifyError.message,
+      });
+    }
+  } catch (error) {
+    console.error("Error in resendRejectionNotification:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi gửi lại thông báo",
+      error: error.message,
     });
   }
 };

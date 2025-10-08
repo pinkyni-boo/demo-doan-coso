@@ -6,8 +6,14 @@ import {
   verifyAdmin,
   verifyAdminOrTrainer,
 } from "../middleware/authMiddleware.js";
+import { getAvailableRooms } from "../controllers/roomController.js";
 
 const router = express.Router();
+
+// ============ ROOM AVAILABILITY ============
+
+// Kiểm tra phòng trống cho lịch dạy bù
+router.get("/available/check", verifyToken, verifyAdmin, getAvailableRooms);
 
 // ============ ROOM MANAGEMENT ============
 

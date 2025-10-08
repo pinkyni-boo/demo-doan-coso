@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
   Eye,
   Plus,
-  CalendarDays
-} from 'lucide-react';
+  CalendarDays,
+} from "lucide-react";
 
 const AdminScheduleRequests = () => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState("all");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showMakeupScheduleModal, setShowMakeupScheduleModal] = useState(false);
   const [stats, setStats] = useState({
     pending: 0,
     approved: 0,
-    rejected: 0
+    rejected: 0,
   });
 
   useEffect(() => {
@@ -33,86 +33,105 @@ const AdminScheduleRequests = () => {
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       const response = await axios.get(
-        'http://localhost:5000/api/admin/schedule-change-requests',
+        "http://localhost:5000/api/admin/schedule-change-requests",
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
         setRequests(response.data.requests);
         setStats(response.data.stats);
       }
     } catch (error) {
-      console.error('Error fetching requests:', error);
+      console.error("Error fetching requests:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApproveReject = async (requestId, action, adminResponse = '') => {
+  const handleApproveReject = async (requestId, action, adminResponse = "") => {
     try {
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       const response = await axios.put(
         `http://localhost:5000/api/admin/schedule-change-requests/${requestId}/${action}`,
         { adminResponse },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
-        alert(`Đã ${action === 'approve' ? 'phê duyệt' : 'từ chối'} yêu cầu thành công!`);
+        alert(
+          `Đã ${
+            action === "approve" ? "phê duyệt" : "từ chối"
+          } yêu cầu thành công!`
+        );
         fetchRequests();
         setShowApprovalModal(false);
         setSelectedRequest(null);
       }
     } catch (error) {
-      console.error('Error processing request:', error);
-      alert('Có lỗi xảy ra, vui lòng thử lại!');
+      console.error("Error processing request:", error);
+      alert("Có lỗi xảy ra, vui lòng thử lại!");
     }
   };
 
   const handleAddMakeupSchedule = async (requestId, makeupData) => {
     try {
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem("token");
+
       const response = await axios.post(
         `http://localhost:5000/api/admin/schedule-change-requests/${requestId}/makeup-schedule`,
         makeupData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       if (response.data.success) {
-        alert('Đã thêm lịch dạy bù thành công!');
+        alert("Đã thêm lịch dạy bù thành công!");
         fetchRequests();
         setShowMakeupScheduleModal(false);
         setSelectedRequest(null);
       }
     } catch (error) {
-      console.error('Error adding makeup schedule:', error);
-      
+      console.error("Error adding makeup schedule:", error);
+
       // Hiển thị thông báo lỗi chi tiết từ server
-      const errorMessage = error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại!';
+      const errorMessage =
+        error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại!";
       alert(errorMessage);
     }
   };
 
-  const filteredRequests = requests.filter(request => {
-    if (filterStatus === 'all') return true;
+  const filteredRequests = requests.filter((request) => {
+    if (filterStatus === "all") return true;
     return request.status === filterStatus;
   });
 
   const getStatusBadge = (status) => {
     const badges = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: <AlertCircle className="h-4 w-4" />, text: 'Chờ xử lý' },
-      approved: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="h-4 w-4" />, text: 'Đã phê duyệt' },
-      rejected: { color: 'bg-red-100 text-red-800', icon: <XCircle className="h-4 w-4" />, text: 'Đã từ chối' }
+      pending: {
+        color: "bg-yellow-100 text-yellow-800",
+        icon: <AlertCircle className="h-4 w-4" />,
+        text: "Chờ xử lý",
+      },
+      approved: {
+        color: "bg-green-100 text-green-800",
+        icon: <CheckCircle className="h-4 w-4" />,
+        text: "Đã phê duyệt",
+      },
+      rejected: {
+        color: "bg-red-100 text-red-800",
+        icon: <XCircle className="h-4 w-4" />,
+        text: "Đã từ chối",
+      },
     };
-    
+
     const badge = badges[status];
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
+      >
         {badge.icon}
         {badge.text}
       </span>
@@ -121,14 +140,16 @@ const AdminScheduleRequests = () => {
 
   const getUrgencyBadge = (urgency) => {
     const badges = {
-      low: { color: 'bg-blue-100 text-blue-800', text: 'Thấp' },
-      medium: { color: 'bg-yellow-100 text-yellow-800', text: 'Trung bình' },
-      high: { color: 'bg-red-100 text-red-800', text: 'Cao' }
+      low: { color: "bg-blue-100 text-blue-800", text: "Thấp" },
+      medium: { color: "bg-yellow-100 text-yellow-800", text: "Trung bình" },
+      high: { color: "bg-red-100 text-red-800", text: "Cao" },
     };
-    
+
     const badge = badges[urgency];
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+      <span
+        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}
+      >
         {badge.text}
       </span>
     );
@@ -163,7 +184,9 @@ const AdminScheduleRequests = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Chờ xử lý</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.pending}
+              </p>
             </div>
           </div>
         </div>
@@ -175,7 +198,9 @@ const AdminScheduleRequests = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Đã phê duyệt</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.approved}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.approved}
+              </p>
             </div>
           </div>
         </div>
@@ -187,7 +212,9 @@ const AdminScheduleRequests = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Đã từ chối</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.rejected}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.rejected}
+              </p>
             </div>
           </div>
         </div>
@@ -199,7 +226,9 @@ const AdminScheduleRequests = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Tổng yêu cầu</p>
-              <p className="text-2xl font-bold text-gray-900">{requests.length}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {requests.length}
+              </p>
             </div>
           </div>
         </div>
@@ -209,18 +238,18 @@ const AdminScheduleRequests = () => {
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex flex-wrap gap-2">
           {[
-            { value: 'all', label: 'Tất cả' },
-            { value: 'pending', label: 'Chờ xử lý' },
-            { value: 'approved', label: 'Đã phê duyệt' },
-            { value: 'rejected', label: 'Đã từ chối' }
+            { value: "all", label: "Tất cả" },
+            { value: "pending", label: "Chờ xử lý" },
+            { value: "approved", label: "Đã phê duyệt" },
+            { value: "rejected", label: "Đã từ chối" },
           ].map((filter) => (
             <button
               key={filter.value}
               onClick={() => setFilterStatus(filter.value)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filterStatus === filter.value
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               {filter.label}
@@ -238,10 +267,9 @@ const AdminScheduleRequests = () => {
               Không có yêu cầu nào
             </h3>
             <p className="text-gray-500">
-              {filterStatus === 'all' 
-                ? 'Chưa có yêu cầu thay đổi lịch nào từ huấn luyện viên.'
-                : `Không có yêu cầu nào với trạng thái "${filterStatus}".`
-              }
+              {filterStatus === "all"
+                ? "Chưa có yêu cầu thay đổi lịch nào từ huấn luyện viên."
+                : `Không có yêu cầu nào với trạng thái "${filterStatus}".`}
             </p>
           </div>
         ) : (
@@ -276,8 +304,12 @@ const AdminScheduleRequests = () => {
             setShowApprovalModal(false);
             setSelectedRequest(null);
           }}
-          onApprove={(response) => handleApproveReject(selectedRequest._id, 'approve', response)}
-          onReject={(response) => handleApproveReject(selectedRequest._id, 'reject', response)}
+          onApprove={(response) =>
+            handleApproveReject(selectedRequest._id, "approve", response)
+          }
+          onReject={(response) =>
+            handleApproveReject(selectedRequest._id, "reject", response)
+          }
         />
       )}
 
@@ -289,7 +321,9 @@ const AdminScheduleRequests = () => {
             setShowMakeupScheduleModal(false);
             setSelectedRequest(null);
           }}
-          onSubmit={(makeupData) => handleAddMakeupSchedule(selectedRequest._id, makeupData)}
+          onSubmit={(makeupData) =>
+            handleAddMakeupSchedule(selectedRequest._id, makeupData)
+          }
         />
       )}
     </div>
@@ -297,29 +331,31 @@ const AdminScheduleRequests = () => {
 };
 
 // Request Card Component
-const RequestCard = ({ 
-  request, 
-  onApprove, 
-  onReject, 
-  onAddMakeup, 
-  getStatusBadge, 
-  getUrgencyBadge 
+const RequestCard = ({
+  request,
+  onApprove,
+  onReject,
+  onAddMakeup,
+  getStatusBadge,
+  getUrgencyBadge,
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            {request.class?.className || 'Lớp học không xác định'}
+            {request.class?.className || "Lớp học không xác định"}
           </h3>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <div className="flex items-center gap-1">
               <User className="h-4 w-4" />
-              <span>{request.trainer?.fullName || 'HLV không xác định'}</span>
+              <span>{request.trainer?.fullName || "HLV không xác định"}</span>
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>{new Date(request.createdAt).toLocaleDateString('vi-VN')}</span>
+              <span>
+                {new Date(request.createdAt).toLocaleDateString("vi-VN")}
+              </span>
             </div>
           </div>
         </div>
@@ -336,24 +372,32 @@ const RequestCard = ({
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
               <span className="font-medium">Ngày gốc:</span>
-              <span>{new Date(request.originalDate).toLocaleDateString('vi-VN')}</span>
+              <span>
+                {new Date(request.originalDate).toLocaleDateString("vi-VN")}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-400" />
               <span className="font-medium">Ngày yêu cầu:</span>
-              <span>{new Date(request.requestedDate).toLocaleDateString('vi-VN')}</span>
+              <span>
+                {new Date(request.requestedDate).toLocaleDateString("vi-VN")}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-gray-400" />
               <span className="font-medium">Phòng:</span>
-              <span>{request.class?.location || 'Chưa xác định'}</span>
+              <span>{request.class?.location || "Chưa xác định"}</span>
             </div>
             {request.class?.startDate && request.class?.endDate && (
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-gray-400" />
                 <span className="font-medium">Thời gian lớp:</span>
                 <span className="text-blue-600">
-                  {new Date(request.class.startDate).toLocaleDateString('vi-VN')} - {new Date(request.class.endDate).toLocaleDateString('vi-VN')}
+                  {new Date(request.class.startDate).toLocaleDateString(
+                    "vi-VN"
+                  )}{" "}
+                  -{" "}
+                  {new Date(request.class.endDate).toLocaleDateString("vi-VN")}
                 </span>
               </div>
             )}
@@ -384,11 +428,18 @@ const RequestCard = ({
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4 text-orange-600" />
-                <span>{new Date(request.makeupSchedule.date).toLocaleDateString('vi-VN')}</span>
+                <span>
+                  {new Date(request.makeupSchedule.date).toLocaleDateString(
+                    "vi-VN"
+                  )}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4 text-orange-600" />
-                <span>{request.makeupSchedule.startTime} - {request.makeupSchedule.endTime}</span>
+                <span>
+                  {request.makeupSchedule.startTime} -{" "}
+                  {request.makeupSchedule.endTime}
+                </span>
               </div>
               <div className="flex items-center gap-1">
                 <MapPin className="h-4 w-4 text-orange-600" />
@@ -399,7 +450,7 @@ const RequestCard = ({
         </div>
       )}
 
-      {request.status === 'pending' && (
+      {request.status === "pending" && (
         <div className="flex gap-2">
           <button
             onClick={onApprove}
@@ -418,7 +469,7 @@ const RequestCard = ({
         </div>
       )}
 
-      {request.status === 'approved' && !request.makeupSchedule && (
+      {request.status === "approved" && !request.makeupSchedule && (
         <button
           onClick={onAddMakeup}
           className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
@@ -433,12 +484,12 @@ const RequestCard = ({
 
 // Approval Modal Component
 const ApprovalModal = ({ request, onClose, onApprove, onReject }) => {
-  const [action, setAction] = useState('approve');
-  const [adminResponse, setAdminResponse] = useState('');
+  const [action, setAction] = useState("approve");
+  const [adminResponse, setAdminResponse] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (action === 'approve') {
+    if (action === "approve") {
       onApprove(adminResponse);
     } else {
       onReject(adminResponse);
@@ -475,7 +526,7 @@ const ApprovalModal = ({ request, onClose, onApprove, onReject }) => {
                   <input
                     type="radio"
                     value="approve"
-                    checked={action === 'approve'}
+                    checked={action === "approve"}
                     onChange={(e) => setAction(e.target.value)}
                     className="mr-2"
                   />
@@ -485,7 +536,7 @@ const ApprovalModal = ({ request, onClose, onApprove, onReject }) => {
                   <input
                     type="radio"
                     value="reject"
-                    checked={action === 'reject'}
+                    checked={action === "reject"}
                     onChange={(e) => setAction(e.target.value)}
                     className="mr-2"
                   />
@@ -511,12 +562,12 @@ const ApprovalModal = ({ request, onClose, onApprove, onReject }) => {
               <button
                 type="submit"
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                  action === 'approve'
-                    ? 'bg-green-500 hover:bg-green-600 text-white'
-                    : 'bg-red-500 hover:bg-red-600 text-white'
+                  action === "approve"
+                    ? "bg-green-500 hover:bg-green-600 text-white"
+                    : "bg-red-500 hover:bg-red-600 text-white"
                 }`}
               >
-                {action === 'approve' ? 'Phê duyệt' : 'Từ chối'}
+                {action === "approve" ? "Phê duyệt" : "Từ chối"}
               </button>
               <button
                 type="button"
@@ -536,37 +587,135 @@ const ApprovalModal = ({ request, onClose, onApprove, onReject }) => {
 // Makeup Schedule Modal Component
 const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
   const [makeupData, setMakeupData] = useState({
-    date: '',
-    startTime: '',
-    endTime: '',
-    location: request.class?.location || ''
+    date: "",
+    startTime: "",
+    endTime: "",
+    location: "",
   });
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(false);
+  const [roomCheckError, setRoomCheckError] = useState("");
 
   // Tính toán ràng buộc thời gian
-  const classStartDate = request.class?.startDate ? new Date(request.class.startDate).toISOString().split('T')[0] : null;
-  const classEndDate = request.class?.endDate ? new Date(request.class.endDate).toISOString().split('T')[0] : null;
+  const classStartDate = request.class?.startDate
+    ? new Date(request.class.startDate).toISOString().split("T")[0]
+    : null;
+  const classEndDate = request.class?.endDate
+    ? new Date(request.class.endDate).toISOString().split("T")[0]
+    : null;
+
+  // Kiểm tra phòng trống khi thay đổi ngày hoặc thời gian
+  const checkAvailableRooms = async () => {
+    if (!makeupData.date || !makeupData.startTime || !makeupData.endTime) {
+      setAvailableRooms([]);
+      setRoomCheckError("");
+      return;
+    }
+
+    if (makeupData.startTime >= makeupData.endTime) {
+      setRoomCheckError("Giờ bắt đầu phải trước giờ kết thúc");
+      setAvailableRooms([]);
+      return;
+    }
+
+    setLoadingRooms(true);
+    setRoomCheckError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `http://localhost:5000/api/rooms/available/check`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            date: makeupData.date,
+            startTime: makeupData.startTime,
+            endTime: makeupData.endTime,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        setAvailableRooms(response.data.data.availableRooms);
+        if (response.data.data.availableRooms.length === 0) {
+          setRoomCheckError("Không có phòng trống trong khung thời gian này");
+        }
+        // Reset location nếu phòng đã chọn không còn available
+        if (
+          makeupData.location &&
+          !response.data.data.availableRooms.find(
+            (room) => room.roomName === makeupData.location
+          )
+        ) {
+          setMakeupData((prev) => ({ ...prev, location: "" }));
+        }
+      }
+    } catch (error) {
+      console.error("Error checking room availability:", error);
+      setRoomCheckError("Lỗi khi kiểm tra phòng trống");
+      setAvailableRooms([]);
+    } finally {
+      setLoadingRooms(false);
+    }
+  };
+
+  // Trigger room check when date/time changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      checkAvailableRooms();
+    }, 500); // Debounce để tránh gọi API quá nhiều
+
+    return () => clearTimeout(timeoutId);
+  }, [makeupData.date, makeupData.startTime, makeupData.endTime]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validation cơ bản
-    if (!makeupData.date || !makeupData.startTime || !makeupData.endTime || !makeupData.location) {
-      alert('Vui lòng điền đầy đủ thông tin!');
+    if (
+      !makeupData.date ||
+      !makeupData.startTime ||
+      !makeupData.endTime ||
+      !makeupData.location
+    ) {
+      alert("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
     // Validation thời gian
     if (makeupData.startTime >= makeupData.endTime) {
-      alert('Giờ kết thúc phải sau giờ bắt đầu!');
+      alert("Giờ kết thúc phải sau giờ bắt đầu!");
       return;
     }
 
     // Validation ngày trong khoảng thời gian lớp học
     if (classStartDate && classEndDate) {
       if (makeupData.date < classStartDate || makeupData.date > classEndDate) {
-        alert(`Ngày dạy bù phải trong khoảng thời gian lớp học (${new Date(classStartDate).toLocaleDateString('vi-VN')} - ${new Date(classEndDate).toLocaleDateString('vi-VN')})!`);
+        alert(
+          `Ngày dạy bù phải trong khoảng thời gian lớp học (${new Date(
+            classStartDate
+          ).toLocaleDateString("vi-VN")} - ${new Date(
+            classEndDate
+          ).toLocaleDateString("vi-VN")})!`
+        );
         return;
       }
+    }
+
+    // Validation phòng trống
+    if (availableRooms.length === 0 && !roomCheckError.includes("Lỗi")) {
+      alert(
+        "Không có phòng trống trong khung thời gian này. Vui lòng chọn thời gian khác!"
+      );
+      return;
+    }
+
+    if (
+      makeupData.location &&
+      !availableRooms.find((room) => room.roomName === makeupData.location)
+    ) {
+      alert("Phòng đã chọn không còn trống. Vui lòng chọn phòng khác!");
+      return;
     }
 
     onSubmit(makeupData);
@@ -574,7 +723,7 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Thêm lịch dạy bù
@@ -593,10 +742,12 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
                   <strong>⚠️ Ràng buộc thời gian:</strong>
                 </p>
                 <p className="text-sm text-yellow-700 mt-1">
-                  Lịch bù chỉ có thể tạo trong khoảng thời gian lớp học đang hoạt động:
+                  Lịch bù chỉ có thể tạo trong khoảng thời gian lớp học đang
+                  hoạt động:
                 </p>
                 <p className="text-sm font-medium text-yellow-800 mt-1">
-                  📅 Từ {new Date(classStartDate).toLocaleDateString('vi-VN')} đến {new Date(classEndDate).toLocaleDateString('vi-VN')}
+                  📅 Từ {new Date(classStartDate).toLocaleDateString("vi-VN")}{" "}
+                  đến {new Date(classEndDate).toLocaleDateString("vi-VN")}
                 </p>
               </div>
             )}
@@ -611,7 +762,9 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
                 <input
                   type="date"
                   value={makeupData.date}
-                  onChange={(e) => setMakeupData({...makeupData, date: e.target.value})}
+                  onChange={(e) =>
+                    setMakeupData({ ...makeupData, date: e.target.value })
+                  }
                   min={classStartDate}
                   max={classEndDate}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -627,7 +780,12 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
                   <input
                     type="time"
                     value={makeupData.startTime}
-                    onChange={(e) => setMakeupData({...makeupData, startTime: e.target.value})}
+                    onChange={(e) =>
+                      setMakeupData({
+                        ...makeupData,
+                        startTime: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -640,7 +798,9 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
                   <input
                     type="time"
                     value={makeupData.endTime}
-                    onChange={(e) => setMakeupData({...makeupData, endTime: e.target.value})}
+                    onChange={(e) =>
+                      setMakeupData({ ...makeupData, endTime: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -649,25 +809,88 @@ const MakeupScheduleModal = ({ request, onClose, onSubmit }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Địa điểm *
+                  Phòng tập *
                 </label>
-                <input
-                  type="text"
-                  value={makeupData.location}
-                  onChange={(e) => setMakeupData({...makeupData, location: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập địa điểm dạy bù..."
-                  required
-                />
+
+                {loadingRooms && (
+                  <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      🔍 Đang kiểm tra phòng trống...
+                    </p>
+                  </div>
+                )}
+
+                {roomCheckError && (
+                  <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">❌ {roomCheckError}</p>
+                  </div>
+                )}
+
+                {availableRooms.length > 0 ? (
+                  <div>
+                    <select
+                      value={makeupData.location}
+                      onChange={(e) =>
+                        setMakeupData({
+                          ...makeupData,
+                          location: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      required
+                    >
+                      <option value="">-- Chọn phòng trống --</option>
+                      {availableRooms.map((room) => (
+                        <option key={room._id} value={room.roomName}>
+                          {room.roomName} ({room.location}) - Sức chứa:{" "}
+                          {room.capacity}
+                        </option>
+                      ))}
+                    </select>
+
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-800">
+                        ✅ Tìm thấy {availableRooms.length} phòng trống
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  makeupData.date &&
+                  makeupData.startTime &&
+                  makeupData.endTime &&
+                  !loadingRooms && (
+                    <div className="p-3 bg-gray-50 border border-gray-300 rounded-lg">
+                      <p className="text-sm text-gray-600">
+                        Vui lòng nhập đầy đủ ngày và thời gian để kiểm tra phòng
+                        trống
+                      </p>
+                    </div>
+                  )
+                )}
               </div>
             </div>
 
             <div className="flex space-x-3 mt-6">
               <button
                 type="submit"
-                className="flex-1 py-2 px-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                disabled={
+                  loadingRooms ||
+                  (availableRooms.length === 0 &&
+                    makeupData.date &&
+                    makeupData.startTime &&
+                    makeupData.endTime)
+                }
+                className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                  loadingRooms ||
+                  (availableRooms.length === 0 &&
+                    makeupData.date &&
+                    makeupData.startTime &&
+                    makeupData.endTime)
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-orange-500 text-white hover:bg-orange-600"
+                }`}
               >
-                Thêm lịch bù
+                {loadingRooms ? "Đang kiểm tra..." : "Thêm lịch bù"}
               </button>
               <button
                 type="button"

@@ -281,12 +281,51 @@ class NotificationService {
   // Thông báo user khi thanh toán bị từ chối
   static async notifyUserPaymentRejected(payment, rejectionReason) {
     try {
-      const title = "Thanh toán bị từ chối";
-      const message = `Thanh toán ${payment.amount.toLocaleString(
+      const title = "⚠️ Yêu cầu thanh toán bị từ chối";
+
+      let detailMessage = "";
+      let actionMessage = "";
+
+      if (payment.paymentType === "class") {
+        detailMessage = "🎓 Đăng ký lớp học của bạn đã bị hủy bỏ.";
+        actionMessage =
+          "Bạn có thể đăng ký lại lớp học này hoặc chọn lớp khác phù hợp.";
+      } else if (
+        payment.paymentType === "membership" ||
+        payment.paymentType === "membership_upgrade"
+      ) {
+        detailMessage =
+          "💳 Gói thành viên của bạn đã được đặt lại trạng thái chờ thanh toán.";
+        actionMessage =
+          "Bạn có thể thực hiện thanh toán lại để kích hoạt gói thành viên.";
+      } else if (payment.paymentType === "membership_and_class") {
+        detailMessage =
+          "📋 Đăng ký gói thành viên và lớp học đã được khôi phục về trạng thái ban đầu.";
+        actionMessage =
+          "Bạn có thể đăng ký lại hoặc liên hệ admin để được hỗ trợ.";
+      } else {
+        detailMessage =
+          "📝 Các đăng ký liên quan đã được khôi phục về trạng thái ban đầu.";
+        actionMessage = "Bạn có thể thực hiện đăng ký/thanh toán lại.";
+      }
+
+      const message = `💰 Thanh toán ${payment.amount.toLocaleString(
         "vi-VN"
-      )}đ của bạn đã bị từ chối. Lý do: ${
-        rejectionReason || "Không rõ lý do"
-      }. Vui lòng liên hệ admin để biết thêm chi tiết.`;
+      )}đ của bạn đã bị từ chối.
+
+📝 Lý do từ chối: ${rejectionReason || "Không có lý do cụ thể"}
+
+${detailMessage}
+
+🔄 Hành động tiếp theo:
+${actionMessage}
+
+📞 Hỗ trợ: Nếu bạn có thắc mắc hoặc cần hỗ trợ, vui lòng liên hệ với admin qua:
+- Email: admin@gym.com  
+- Hotline: 0123-456-789
+- Hoặc đến trực tiếp tại quầy lễ tân
+
+Cảm ơn bạn đã sử dụng dịch vụ! 🙏`;
 
       return await this.createNotification({
         title,

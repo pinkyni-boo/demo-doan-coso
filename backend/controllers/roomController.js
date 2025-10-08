@@ -1,5 +1,7 @@
-const Room = require("../models/Room");
-const Equipment = require("../models/Equipment");
+import Room from "../models/Room.js";
+import Equipment from "../models/Equipment.js";
+import Class from "../models/Class.js";
+import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
 
 // Lấy danh sách tất cả phòng tập
 const getAllRooms = async (req, res) => {
@@ -365,7 +367,202 @@ const getRoomStats = async (req, res) => {
   }
 };
 
-module.exports = {
+// Kiểm tra phòng trống cho lịch dạy bù
+const getAvailableRooms = async (req, res) => {
+  try {
+    const { date, startTime, endTime } = req.query;
+
+    if (!date || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp đầy đủ thông tin: date, startTime, endTime",
+      });
+    }
+
+    // Chuyển đổi date string thành Date object
+    const targetDate = new Date(date);
+    const dayOfWeek = targetDate.getDay(); // 0 = Sunday, 1 = Monday, ...
+
+    // Map day numbers to Vietnamese day names used in schedule
+    const dayMapping = {
+      0: ["CN", "Chủ nhật"],
+      1: ["T2", "Thứ 2", "Thứ hai"],
+      2: ["T3", "Thứ 3", "Thứ ba"],
+      3: ["T4", "Thứ 4", "Thứ tư"],
+      4: ["T5", "Thứ 5", "Thứ năm"],
+      5: ["T6", "Thứ 6", "Thứ sáu"],
+      6: ["T7", "Thứ 7", "Thứ bảy"],
+    };
+
+    // Lấy tất cả phòng active
+    const allRooms = await Room.find({ status: "active" }).sort({
+      roomName: 1,
+    });
+
+    // Lấy tất cả lớp học đang hoạt động trong ngày đó
+    const activeClasses = await Class.find({
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate },
+      status: "active",
+    });
+
+    // Lấy tất cả lịch dạy bù đã được tạo cho ngày đó
+    const makeupSchedules = await ScheduleChangeRequest.find({
+      "makeupSchedule.date": {
+        $gte: new Date(
+          targetDate.getFullYear(),
+          targetDate.getMonth(),
+          targetDate.getDate()
+        ),
+        $lt: new Date(
+          targetDate.getFullYear(),
+          targetDate.getMonth(),
+          targetDate.getDate() + 1
+        ),
+      },
+      status: "approved",
+    });
+
+    // Function để kiểm tra xung đột thời gian
+    const isTimeConflict = (start1, end1, start2, end2) => {
+      return start1 < end2 && end1 > start2;
+    };
+
+    // Function để parse time string thành minutes
+    const timeToMinutes = (timeStr) => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    const requestStartMinutes = timeToMinutes(startTime);
+    const requestEndMinutes = timeToMinutes(endTime);
+
+    // Kiểm tra từng phòng
+    const availableRooms = [];
+    const conflictRooms = [];
+
+    for (const room of allRooms) {
+      let isAvailable = true;
+      const conflicts = [];
+
+      // Kiểm tra xung đột với lớp học thường
+      for (const classItem of activeClasses) {
+        if (
+          classItem.location === room.roomName ||
+          classItem.location === room.roomCode
+        ) {
+          // Kiểm tra xem lớp có diễn ra trong ngày đó không
+          const schedule = classItem.schedule;
+          if (schedule) {
+            const dayNames = dayMapping[dayOfWeek];
+            const hasScheduleOnDay = dayNames.some((dayName) =>
+              schedule.toLowerCase().includes(dayName.toLowerCase())
+            );
+
+            if (hasScheduleOnDay) {
+              // Parse thời gian từ schedule (format: "T2,T4 - 19:00-21:00")
+              const timePart = schedule.split(" - ")[1];
+              if (timePart) {
+                const [classStart, classEnd] = timePart.split("-");
+                const classStartMinutes = timeToMinutes(classStart);
+                const classEndMinutes = timeToMinutes(classEnd);
+
+                if (
+                  isTimeConflict(
+                    requestStartMinutes,
+                    requestEndMinutes,
+                    classStartMinutes,
+                    classEndMinutes
+                  )
+                ) {
+                  isAvailable = false;
+                  conflicts.push({
+                    type: "class",
+                    name: classItem.className,
+                    time: `${classStart}-${classEnd}`,
+                    instructor: classItem.instructorName,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Kiểm tra xung đột với lịch dạy bù
+      for (const makeupRequest of makeupSchedules) {
+        if (
+          makeupRequest.makeupSchedule &&
+          makeupRequest.makeupSchedule.location === room.roomName
+        ) {
+          const makeupStart = timeToMinutes(
+            makeupRequest.makeupSchedule.startTime
+          );
+          const makeupEnd = timeToMinutes(makeupRequest.makeupSchedule.endTime);
+
+          if (
+            isTimeConflict(
+              requestStartMinutes,
+              requestEndMinutes,
+              makeupStart,
+              makeupEnd
+            )
+          ) {
+            isAvailable = false;
+            conflicts.push({
+              type: "makeup",
+              name: "Lịch dạy bù",
+              time: `${makeupRequest.makeupSchedule.startTime}-${makeupRequest.makeupSchedule.endTime}`,
+              instructor: "HLV khác",
+            });
+          }
+        }
+      }
+
+      if (isAvailable) {
+        availableRooms.push({
+          _id: room._id,
+          roomName: room.roomName,
+          roomCode: room.roomCode,
+          location: room.location,
+          capacity: room.capacity,
+          facilities: room.facilities,
+        });
+      } else {
+        conflictRooms.push({
+          _id: room._id,
+          roomName: room.roomName,
+          roomCode: room.roomCode,
+          conflicts: conflicts,
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Tìm thấy ${availableRooms.length} phòng trống`,
+      data: {
+        availableRooms,
+        conflictRooms,
+        searchParams: {
+          date,
+          startTime,
+          endTime,
+          dayOfWeek: dayMapping[dayOfWeek][0],
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error checking room availability:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi kiểm tra phòng trống",
+      error: error.message,
+    });
+  }
+};
+
+export {
   getAllRooms,
   getRoomById,
   createRoom,
@@ -374,4 +571,5 @@ module.exports = {
   addRoomReport,
   getRoomEquipment,
   getRoomStats,
+  getAvailableRooms,
 };

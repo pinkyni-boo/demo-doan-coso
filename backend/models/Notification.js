@@ -17,6 +17,7 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "schedule",
         "payment",
+        "payment-rejected",
         "attendance",
         "general",
         "issue_reported",

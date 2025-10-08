@@ -339,7 +339,7 @@ const SignUp = () => {
     >
       {/* Header */}
       <motion.div variants={itemVariants} className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-vintage-gold to-vintage-accent rounded-2xl mb-4 shadow-golden">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-800 rounded-2xl mb-4 shadow-golden">
           <Crown className="h-8 w-8 text-white" />
         </div>
         <h2 className="text-3xl font-bold text-vintage-dark vintage-heading mb-2">
@@ -354,19 +354,19 @@ const SignUp = () => {
       <motion.div variants={itemVariants} className="flex justify-center mb-8">
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-vintage-gold rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+            <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-white">
               1
             </div>
-            <span className="ml-2 text-sm font-medium text-vintage-gold vintage-heading">
+            <span className="ml-3 text-base font-semibold text-orange-600 vintage-heading">
               Tài khoản
             </span>
           </div>
           <div className="w-12 h-1 bg-vintage-accent/30 rounded"></div>
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-vintage-accent/30 rounded-full flex items-center justify-center text-vintage-neutral font-bold">
+            <div className="w-12 h-12 bg-vintage-accent/30 rounded-full flex items-center justify-center text-vintage-neutral font-bold text-lg border-2 border-gray-200">
               2
             </div>
-            <span className="ml-2 text-sm font-medium text-vintage-neutral vintage-heading">
+            <span className="ml-3 text-base font-medium text-vintage-neutral vintage-heading">
               Cá nhân
             </span>
           </div>
@@ -473,16 +473,19 @@ const SignUp = () => {
       className="space-y-2"
     >
       {/* Header with Back Button */}
-      <motion.div variants={itemVariants} className="flex items-center mb-8">
+      <motion.div variants={itemVariants} className="relative mb-8">
+        {/* Back Button - positioned absolutely to not affect centering */}
         <button
           type="button"
           onClick={prevStep}
-          className="text-vintage-neutral hover:text-vintage-gold transition-colors p-2 rounded-full hover:bg-vintage-warm mr-4"
+          className="absolute left-0 top-1/2 transform -translate-y-1/2 text-vintage-neutral hover:text-orange-600 transition-colors p-2 rounded-full hover:bg-vintage-warm z-10"
         >
           <ArrowLeft size={24} />
         </button>
-        <div className="flex-1 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-vintage-gold to-vintage-accent rounded-2xl mb-4 shadow-golden">
+
+        {/* Centered Content */}
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-800 rounded-2xl mb-4 shadow-golden">
             <Users className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-vintage-dark vintage-heading mb-2">
@@ -498,19 +501,19 @@ const SignUp = () => {
       <motion.div variants={itemVariants} className="flex justify-center mb-8">
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-vintage-accent rounded-full flex items-center justify-center text-white shadow-lg">
+            <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white shadow-lg border-2 border-white">
               <Check size={20} />
             </div>
-            <span className="ml-2 text-sm font-medium text-vintage-accent vintage-heading">
+            <span className="ml-3 text-base font-semibold text-green-600 vintage-heading">
               Tài khoản
             </span>
           </div>
-          <div className="w-12 h-1 bg-vintage-gold rounded"></div>
+          <div className="w-12 h-1 bg-orange-600 rounded"></div>
           <div className="flex items-center">
-            <div className="w-10 h-10 bg-vintage-gold rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+            <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg border-2 border-white">
               2
             </div>
-            <span className="ml-2 text-sm font-medium text-vintage-gold vintage-heading">
+            <span className="ml-3 text-base font-semibold text-orange-600 vintage-heading">
               Cá nhân
             </span>
           </div>
@@ -689,9 +692,9 @@ const SignUp = () => {
     <div className="min-h-screen bg-gradient-to-br from-vintage-cream via-vintage-warm to-vintage-cream flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-vintage-gold rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-20 w-40 h-40 bg-vintage-accent rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-vintage-primary rounded-full blur-3xl opacity-30"></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-orange-500 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-40 h-40 bg-orange-600 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-orange-700 rounded-full blur-3xl opacity-30"></div>
       </div>
 
       <div className="w-full max-w-lg relative z-10">
@@ -703,9 +706,18 @@ const SignUp = () => {
             transition={{ duration: 0.5 }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-vintage-gold to-vintage-accent rounded-3xl blur-2xl opacity-30"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 border-2 border-vintage-gold/30 shadow-golden">
-              <Crown className="h-12 w-12 text-vintage-gold mx-auto mb-4" />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-700 rounded-3xl blur-2xl opacity-30"></div>
+            <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-8 border-2 border-orange-500/30 shadow-golden">
+              {/* Logo với màu cam đất */}
+              <div className="relative w-16 h-16 mx-auto mb-4">
+                {/* Outer glow ring */}
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full blur-lg opacity-40 animate-pulse"></div>
+
+                {/* Main logo container */}
+                <div className="relative w-full h-full bg-gradient-to-br from-orange-500 via-orange-600 to-orange-800 rounded-full flex items-center justify-center shadow-golden border-4 border-white/20">
+                  <Crown className="h-8 w-8 text-white drop-shadow-lg" />
+                </div>
+              </div>
               <h1 className="text-4xl font-bold text-vintage-primary vintage-heading">
                 Royal Fitness Club
               </h1>
