@@ -637,11 +637,11 @@ export default function UserSchedule() {
                   <div
                     key={dayIndex}
                     className={`bg-gray-50 rounded-lg p-4 min-h-[200px] ${
-                      isToday ? 'ring-2 ring-blue-500 bg-blue-50' : ''
+                      isToday ? 'bg-blue-50' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className={`font-semibold ${isToday ? 'text-blue-800' : 'text-gray-900'}`}>
+                      <h3 className={`font-semibold ${isToday ? 'text-black-800' : 'text-gray-900'}`}>
                         {dayName}
                       </h3>
                       <span className="text-sm text-gray-500">

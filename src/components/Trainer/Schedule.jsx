@@ -250,12 +250,10 @@ export default function TrainerSchedule() {
                       return (
                         <th 
                           key={day} 
-                          className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-40 ${
-                            isToday ? 'bg-blue-100 text-blue-800' : 'text-gray-500'
-                          }`}
+                          className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider min-w-40 text-gray-500`}
                         >
                           <div>{day}</div>
-                          <div className={`text-sm font-normal ${isToday ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <div className="text-sm font-normal text-gray-400">
                             {date.getDate()}/{date.getMonth() + 1}
                           </div>
                         </th>
@@ -280,9 +278,7 @@ export default function TrainerSchedule() {
                         return (
                           <td 
                             key={`${timeSlot.time}-${day}`} 
-                            className={`px-2 py-2 whitespace-nowrap text-sm text-gray-500 border-l border-gray-200 ${
-                              isToday ? 'bg-blue-50' : ''
-                            }`}
+                            className={`px-2 py-2 whitespace-nowrap text-sm text-gray-500 border-l border-gray-200`}
                             style={{ minHeight: '80px', height: '80px' }}
                           >
                             {classItem ? (
