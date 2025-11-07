@@ -110,12 +110,26 @@ export default function ClassManagement() {
         return;
       }
 
+      // Chuyển đổi ngày từ dd/mm/yyyy sang ISO format
+      const convertToISO = (dateStr) => {
+        if (!dateStr) return "";
+        const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        const match = dateStr.match(datePattern);
+        if (match) {
+          const [, day, month, year] = match;
+          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        }
+        return dateStr; // Return as-is if not in dd/mm/yyyy format
+      };
+
       const submitData = {
         ...formData,
         serviceId: formData.serviceId, // Gửi serviceId để backend xử lý
         maxMembers: parseInt(formData.maxMembers),
         totalSessions: parseInt(formData.totalSessions),
         price: parseInt(formData.price),
+        startDate: convertToISO(formData.startDate),
+        endDate: convertToISO(formData.endDate),
         // Only include location as that's what the Class model expects
         location: formData.location || formData.roomName,
       };
@@ -199,6 +213,16 @@ export default function ClassManagement() {
         r._id === classItem.roomId
     );
 
+    // Chuyển đổi ngày từ ISO format sang dd/mm/yyyy
+    const convertToDisplayFormat = (dateStr) => {
+      if (!dateStr) return "";
+      const date = new Date(dateStr);
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
     setFormData({
       ...classItem,
       serviceId: classItem.service?._id || classItem.service || "", // Xử lý cả trường hợp populated và không populated
@@ -207,12 +231,8 @@ export default function ClassManagement() {
       roomName:
         room?.roomName || classItem.location || classItem.roomName || "",
       location: classItem.location || room?.roomName || "", // Ensure location is set
-      startDate: classItem.startDate
-        ? new Date(classItem.startDate).toISOString().split("T")[0]
-        : "",
-      endDate: classItem.endDate
-        ? new Date(classItem.endDate).toISOString().split("T")[0]
-        : "",
+      startDate: convertToDisplayFormat(classItem.startDate),
+      endDate: convertToDisplayFormat(classItem.endDate),
       schedule: classItem.schedule || [],
     });
     setEditingClass(classItem);
@@ -653,14 +673,55 @@ export default function ClassManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ngày bắt đầu *
+                      Ngày bắt đầu *{" "}
+                      <span className="text-gray-500 text-xs">
+                        (dd/mm/yyyy)
+                      </span>
                     </label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="dd/mm/yyyy"
                       value={formData.startDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startDate: e.target.value })
-                      }
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        // Chỉ cho phép nhập số và dấu /
+                        value = value.replace(/[^\d/]/g, "");
+
+                        // Tự động thêm dấu / sau ngày và tháng
+                        if (value.length === 2 && !value.includes("/")) {
+                          value = value + "/";
+                        } else if (
+                          value.length === 5 &&
+                          value.split("/").length === 2
+                        ) {
+                          value = value + "/";
+                        }
+
+                        // Giới hạn độ dài
+                        if (value.length <= 10) {
+                          setFormData({ ...formData, startDate: value });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Validate format dd/mm/yyyy khi blur
+                        const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                        const match = e.target.value.match(datePattern);
+                        if (match) {
+                          const day = parseInt(match[1]);
+                          const month = parseInt(match[2]);
+                          const year = parseInt(match[3]);
+
+                          if (day < 1 || day > 31 || month < 1 || month > 12) {
+                            alert("Ngày hoặc tháng không hợp lệ!");
+                            setFormData({ ...formData, startDate: "" });
+                          }
+                        } else if (e.target.value && !match) {
+                          alert(
+                            "Định dạng ngày không hợp lệ! Vui lòng nhập theo định dạng dd/mm/yyyy"
+                          );
+                          setFormData({ ...formData, startDate: "" });
+                        }
+                      }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />
@@ -668,14 +729,55 @@ export default function ClassManagement() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ngày kết thúc *
+                      Ngày kết thúc *{" "}
+                      <span className="text-gray-500 text-xs">
+                        (dd/mm/yyyy)
+                      </span>
                     </label>
                     <input
-                      type="date"
+                      type="text"
+                      placeholder="dd/mm/yyyy"
                       value={formData.endDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, endDate: e.target.value })
-                      }
+                      onChange={(e) => {
+                        let value = e.target.value;
+                        // Chỉ cho phép nhập số và dấu /
+                        value = value.replace(/[^\d/]/g, "");
+
+                        // Tự động thêm dấu / sau ngày và tháng
+                        if (value.length === 2 && !value.includes("/")) {
+                          value = value + "/";
+                        } else if (
+                          value.length === 5 &&
+                          value.split("/").length === 2
+                        ) {
+                          value = value + "/";
+                        }
+
+                        // Giới hạn độ dài
+                        if (value.length <= 10) {
+                          setFormData({ ...formData, endDate: value });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Validate format dd/mm/yyyy khi blur
+                        const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+                        const match = e.target.value.match(datePattern);
+                        if (match) {
+                          const day = parseInt(match[1]);
+                          const month = parseInt(match[2]);
+                          const year = parseInt(match[3]);
+
+                          if (day < 1 || day > 31 || month < 1 || month > 12) {
+                            alert("Ngày hoặc tháng không hợp lệ!");
+                            setFormData({ ...formData, endDate: "" });
+                          }
+                        } else if (e.target.value && !match) {
+                          alert(
+                            "Định dạng ngày không hợp lệ! Vui lòng nhập theo định dạng dd/mm/yyyy"
+                          );
+                          setFormData({ ...formData, endDate: "" });
+                        }
+                      }}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       required
                     />

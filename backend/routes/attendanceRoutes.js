@@ -87,4 +87,43 @@ router.get("/user/:userId/report", verifyToken, async (req, res) => {
   }
 });
 
+// ============================================
+// ADMIN ATTENDANCE MANAGEMENT ROUTES
+// ============================================
+
+import {
+  getAttendanceList,
+  getSessionDetail,
+  getStudentAttendanceReport,
+  getTrainerAttendanceReport,
+  getAllStudentsWithAttendance,
+  getAllTrainersWithClasses,
+} from "../controllers/attendanceController.js";
+
+// 1. Lấy danh sách điểm danh (với filter)
+router.get("/admin/list", verifyToken, getAttendanceList);
+
+// 2. Xem chi tiết một buổi học
+router.get(
+  "/admin/session/:classId/:sessionNumber",
+  verifyToken,
+  getSessionDetail
+);
+
+// 3. Báo cáo điểm danh theo học viên
+router.get("/admin/student/:userId", verifyToken, getStudentAttendanceReport);
+
+// 4. Báo cáo điểm danh theo trainer
+router.get(
+  "/admin/trainer/:trainerName",
+  verifyToken,
+  getTrainerAttendanceReport
+);
+
+// 5. Lấy danh sách tất cả học viên có điểm danh (for filter dropdown)
+router.get("/admin/students", verifyToken, getAllStudentsWithAttendance);
+
+// 6. Lấy danh sách tất cả trainer có lớp (for filter dropdown)
+router.get("/admin/trainers", verifyToken, getAllTrainersWithClasses);
+
 export default router;

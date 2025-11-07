@@ -7,6 +7,7 @@ import {
   updateTrainerStatus,
   getAssignedClasses,
   getClassDetail,
+  getClassFullSchedule,
   createScheduleChangeRequest,
   getScheduleChangeRequests,
 } from "../controllers/trainerController.js";
@@ -24,9 +25,14 @@ router.delete("/:id", verifyToken, verifyAdmin, deleteTrainer);
 // Trainer routes
 router.get("/assigned-classes", verifyToken, getAssignedClasses);
 router.get("/class/:classId", verifyToken, getClassDetail);
+router.get("/class/:classId/full-schedule", verifyToken, getClassFullSchedule);
 
 // Schedule change request routes
-router.post("/schedule-change-request", verifyToken, createScheduleChangeRequest);
+router.post(
+  "/schedule-change-request",
+  verifyToken,
+  createScheduleChangeRequest
+);
 router.get("/schedule-change-requests", verifyToken, getScheduleChangeRequests);
 
 export default router;

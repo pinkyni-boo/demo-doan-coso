@@ -1,5 +1,6 @@
 import Class from "../models/Class.js";
 import ClassEnrollment from "../models/ClassEnrollment.js";
+import Attendance from "../models/Attendance.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
 import mongoose from "mongoose";
@@ -134,6 +135,172 @@ export const createClass = async (req, res) => {
 };
 
 // Cập nhật lớp học
+// Helper function để tính toán các ngày học dựa trên schedule
+const calculateSessionDates = (startDate, endDate, schedule, totalSessions) => {
+  const sessionDates = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Lấy các ngày trong tuần có lớp (từ schedule)
+  const classDays = schedule.map((s) => s.dayOfWeek).sort((a, b) => a - b);
+
+  if (classDays.length === 0) {
+    return sessionDates;
+  }
+
+  let currentDate = new Date(start);
+  let sessionCount = 0;
+
+  // Tìm ngày đầu tiên có lớp
+  while (currentDate <= end && !classDays.includes(currentDate.getDay())) {
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  // Tạo danh sách các ngày học
+  while (currentDate <= end && sessionCount < totalSessions) {
+    const dayOfWeek = currentDate.getDay();
+
+    if (classDays.includes(dayOfWeek)) {
+      // Tìm thông tin schedule cho ngày này
+      const scheduleInfo = schedule.find((s) => s.dayOfWeek === dayOfWeek);
+
+      sessionDates.push({
+        date: new Date(currentDate),
+        sessionNumber: sessionCount + 1,
+        dayOfWeek: dayOfWeek,
+        startTime: scheduleInfo?.startTime || "00:00",
+        endTime: scheduleInfo?.endTime || "00:00",
+      });
+      sessionCount++;
+    }
+
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return sessionDates;
+};
+
+// Helper function để cập nhật attendance records sau khi update class
+const updateAttendanceRecords = async (classId, oldClass, newClass) => {
+  try {
+    // Kiểm tra xem có thay đổi schedule, startDate, hoặc endDate không
+    const scheduleChanged =
+      JSON.stringify(oldClass.schedule) !== JSON.stringify(newClass.schedule);
+    const dateChanged =
+      oldClass.startDate.getTime() !== newClass.startDate.getTime() ||
+      oldClass.endDate.getTime() !== newClass.endDate.getTime();
+    const totalSessionsChanged =
+      oldClass.totalSessions !== newClass.totalSessions;
+
+    if (!scheduleChanged && !dateChanged && !totalSessionsChanged) {
+      console.log(
+        "No schedule/date changes detected, skipping attendance update"
+      );
+      return;
+    }
+
+    console.log("Schedule or date changed, recalculating session dates...");
+
+    // Tính toán lại các ngày học
+    const newSessionDates = calculateSessionDates(
+      newClass.startDate,
+      newClass.endDate,
+      newClass.schedule,
+      newClass.totalSessions
+    );
+
+    console.log(`Calculated ${newSessionDates.length} new session dates`);
+
+    // Lấy danh sách học viên đã thanh toán
+    const enrollments = await ClassEnrollment.find({
+      class: classId,
+      paymentStatus: true,
+    }).select("user");
+
+    if (enrollments.length === 0) {
+      console.log("No paid students, skipping attendance record update");
+      return;
+    }
+
+    // Lấy các attendance records hiện có
+    const existingAttendance = await Attendance.find({
+      classId: new mongoose.Types.ObjectId(classId),
+    });
+
+    // Tạo map để kiểm tra session nào đã có attendance
+    const attendanceMap = new Map();
+    existingAttendance.forEach((att) => {
+      const key = `${att.sessionNumber}-${att.userId}`;
+      attendanceMap.set(key, att);
+    });
+
+    // Cập nhật hoặc tạo mới attendance records
+    const bulkOps = [];
+
+    for (const sessionDate of newSessionDates) {
+      for (const enrollment of enrollments) {
+        const key = `${sessionDate.sessionNumber}-${enrollment.user}`;
+        const existingRecord = attendanceMap.get(key);
+
+        if (existingRecord) {
+          // Cập nhật ngày cho record đã tồn tại (chỉ nếu chưa điểm danh)
+          if (!existingRecord.isPresent) {
+            bulkOps.push({
+              updateOne: {
+                filter: { _id: existingRecord._id },
+                update: {
+                  sessionDate: sessionDate.date,
+                  notes: `Updated: Schedule changed on ${new Date().toISOString()}`,
+                },
+              },
+            });
+          }
+        } else {
+          // Tạo record mới cho session mới
+          bulkOps.push({
+            insertOne: {
+              document: {
+                classId: new mongoose.Types.ObjectId(classId),
+                userId: new mongoose.Types.ObjectId(enrollment.user),
+                sessionNumber: sessionDate.sessionNumber,
+                sessionDate: sessionDate.date,
+                isPresent: false,
+                checkinTime: null,
+              },
+            },
+          });
+        }
+      }
+    }
+
+    // Thực hiện bulk operations
+    if (bulkOps.length > 0) {
+      await Attendance.bulkWrite(bulkOps, { ordered: false });
+      console.log(
+        `Processed ${bulkOps.length} attendance record updates/inserts`
+      );
+    }
+
+    // Xóa các session cũ nếu giảm totalSessions (chỉ xóa những session chưa điểm danh)
+    if (
+      totalSessionsChanged &&
+      newClass.totalSessions < oldClass.totalSessions
+    ) {
+      const deleteResult = await Attendance.deleteMany({
+        classId: new mongoose.Types.ObjectId(classId),
+        sessionNumber: { $gt: newClass.totalSessions },
+        isPresent: false, // Chỉ xóa session chưa điểm danh
+      });
+      console.log(
+        `Deleted ${deleteResult.deletedCount} old attendance records`
+      );
+    }
+  } catch (error) {
+    console.error("Error updating attendance records:", error);
+    // Không throw error để không làm fail việc update class
+  }
+};
+
 export const updateClass = async (req, res) => {
   try {
     const { id } = req.params;
@@ -145,14 +312,19 @@ export const updateClass = async (req, res) => {
       delete updateData.serviceId;
     }
 
+    // Lấy thông tin lớp học cũ để so sánh
+    const oldClass = await Class.findById(id);
+    if (!oldClass) {
+      return res.status(404).json({ message: "Không tìm thấy lớp học" });
+    }
+
     const updatedClass = await Class.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     }).populate("service", "name image");
 
-    if (!updatedClass) {
-      return res.status(404).json({ message: "Không tìm thấy lớp học" });
-    }
+    // Cập nhật attendance records nếu có thay đổi schedule/date
+    await updateAttendanceRecords(id, oldClass, updatedClass);
 
     res.status(200).json(updatedClass);
   } catch (error) {
@@ -412,22 +584,23 @@ export const updateEnrollmentPayment = async (req, res) => {
     console.log("Updating payment status:", { classId, userId, paymentStatus });
 
     const enrollment = await ClassEnrollment.findOneAndUpdate(
-      { 
+      {
         class: classId,
-        user: userId 
+        user: userId,
       },
-      { 
-        paymentStatus: paymentStatus 
+      {
+        paymentStatus: paymentStatus,
       },
-      { 
-        new: true 
+      {
+        new: true,
       }
-    ).populate("user", "username email")
-     .populate("class", "className");
+    )
+      .populate("user", "username email")
+      .populate("class", "className");
 
     if (!enrollment) {
       return res.status(404).json({
-        message: "Không tìm thấy enrollment"
+        message: "Không tìm thấy enrollment",
       });
     }
 
@@ -435,7 +608,7 @@ export const updateEnrollmentPayment = async (req, res) => {
 
     res.status(200).json({
       message: "Cập nhật trạng thái thanh toán thành công",
-      enrollment
+      enrollment,
     });
   } catch (error) {
     console.error("Error updating payment status:", error);
@@ -454,7 +627,7 @@ export const getUserClasses = async (req, res) => {
 
     // Xác định userId thực tế cần query
     let targetUserId = userId;
-    
+
     // Nếu userId trong params khớp với user hiện tại (bao gồm admin), luôn query theo ID đó
     if (userId === req.user._id.toString()) {
       targetUserId = userId;
@@ -472,7 +645,8 @@ export const getUserClasses = async (req, res) => {
     const enrollments = await ClassEnrollment.find(filter)
       .populate({
         path: "class",
-        select: "className serviceName instructorName description maxMembers currentMembers totalSessions currentSession price startDate endDate schedule status location requirements", // Explicitly include schedule
+        select:
+          "className serviceName instructorName description maxMembers currentMembers totalSessions currentSession price startDate endDate schedule status location requirements", // Explicitly include schedule
         populate: {
           path: "service",
           select: "name image",
