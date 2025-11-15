@@ -64,6 +64,24 @@ const AdminDashboardNew = () => {
       setCurrentUser(JSON.parse(userData));
     }
 
+    // Check for module parameter from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleParam = urlParams.get("module");
+    if (moduleParam) {
+      console.log("📍 Setting module from URL:", moduleParam);
+      setActiveModule(moduleParam);
+      // Clear the parameter after reading
+      window.history.replaceState({}, "", window.location.pathname);
+    } else {
+      // Check localStorage for module navigation
+      const navigateToModule = localStorage.getItem("adminNavigateToModule");
+      if (navigateToModule) {
+        console.log("📍 Setting module from localStorage:", navigateToModule);
+        setActiveModule(navigateToModule);
+        localStorage.removeItem("adminNavigateToModule");
+      }
+    }
+
     // Fetch dashboard statistics
     fetchDashboardStats();
   }, []);

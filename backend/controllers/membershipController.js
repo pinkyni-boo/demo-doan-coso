@@ -118,9 +118,12 @@ export const getUserMembership = async (req, res) => {
 
     // Xác định userId cần query
     let targetUserId = userId;
-    
+
     // Nếu userId khớp với user hiện tại hoặc admin query cho mình
-    if (userId === req.user._id.toString() || (req.user.role === "admin" && userId)) {
+    if (
+      userId === req.user._id.toString() ||
+      (req.user.role === "admin" && userId)
+    ) {
       targetUserId = userId;
     }
 
@@ -376,6 +379,110 @@ export const deleteMembership = async (req, res) => {
     console.error("Lỗi khi xóa thẻ thành viên:", error);
     return res.status(500).json({
       message: "Không thể xóa thẻ thành viên",
+      error: error.message,
+    });
+  }
+};
+
+// Gia hạn thẻ thành viên
+export const renewMembership = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { id } = req.params;
+    const { type, price, paymentStatus } = req.body;
+
+    console.log("Renewing membership:", id, req.body);
+
+    // Kiểm tra membership hiện tại có tồn tại không
+    const currentMembership = await Membership.findById(id).session(session);
+    if (!currentMembership) {
+      await session.abortTransaction();
+      session.endSession();
+      return res
+        .status(404)
+        .json({ message: "Không tìm thấy thẻ thành viên hiện tại" });
+    }
+
+    // Không cho phép gia hạn thẻ đã hủy
+    if (currentMembership.status === "cancelled") {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({
+        message: "Không thể gia hạn thẻ đã bị hủy",
+      });
+    }
+
+    // Tính toán ngày bắt đầu mới và ngày hết hạn mới
+    const oldEndDate = new Date(currentMembership.endDate);
+    const today = new Date();
+
+    // Nếu thẻ đã hết hạn, bắt đầu từ hôm nay
+    // Nếu thẻ còn hạn, bắt đầu từ ngày sau khi hết hạn cũ
+    const newStartDate =
+      oldEndDate < today
+        ? today
+        : new Date(oldEndDate.getTime() + 24 * 60 * 60 * 1000);
+
+    // Tính duration dựa trên loại thẻ
+    let durationInDays = 30; // mặc định 1 tháng
+    if (type.includes("annual") || type.includes("yearly")) {
+      durationInDays = 365;
+    } else if (type.includes("quarterly")) {
+      durationInDays = 90;
+    } else if (type.includes("monthly")) {
+      durationInDays = 30;
+    }
+
+    const newEndDate = new Date(
+      newStartDate.getTime() + durationInDays * 24 * 60 * 60 * 1000
+    );
+
+    console.log("Calculated dates:", {
+      oldEndDate,
+      newStartDate,
+      newEndDate,
+      durationInDays,
+    });
+
+    // Cập nhật membership hiện tại
+    currentMembership.type = type;
+    currentMembership.startDate = newStartDate;
+    currentMembership.endDate = newEndDate;
+    currentMembership.price = price;
+    currentMembership.status = "active";
+    currentMembership.paymentStatus =
+      paymentStatus !== undefined ? paymentStatus : false;
+
+    await currentMembership.save({ session });
+
+    // Cập nhật thông tin membership vào user nếu đã thanh toán
+    if (currentMembership.paymentStatus) {
+      await User.findByIdAndUpdate(
+        currentMembership.user,
+        {
+          membership: currentMembership._id,
+          membershipType: type,
+          membershipEndDate: newEndDate,
+        },
+        { new: true, session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      message: "Gia hạn thẻ thành viên thành công",
+      membership: currentMembership,
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Lỗi khi gia hạn thẻ thành viên:", error);
+    return res.status(500).json({
+      message: "Không thể gia hạn thẻ thành viên",
       error: error.message,
     });
   }

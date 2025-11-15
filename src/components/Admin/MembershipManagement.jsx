@@ -13,6 +13,12 @@ export default function MembershipManagement() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [membershipToDelete, setMembershipToDelete] = useState(null);
 
+  // Renewal states
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [membershipToRenew, setMembershipToRenew] = useState(null);
+  const [renewalPackage, setRenewalPackage] = useState("");
+  const [renewalPaymentStatus, setRenewalPaymentStatus] = useState(true);
+
   useEffect(() => {
     // Kiểm tra xác thực và quyền admin
     const token = localStorage.getItem("token");
@@ -149,6 +155,128 @@ export default function MembershipManagement() {
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "2-digit", day: "2-digit" };
     return new Date(dateString).toLocaleDateString("vi-VN", options);
+  };
+
+  // Format price
+  const formatPrice = (price) => {
+    return price?.toLocaleString("vi-VN") + "đ";
+  };
+
+  // Membership packages
+  const membershipPackages = {
+    "basic-monthly": { name: "Basic - Tháng", price: 500000, duration: 30 },
+    "standard-monthly": {
+      name: "Standard - Tháng",
+      price: 800000,
+      duration: 30,
+    },
+    "vip-monthly": { name: "VIP - Tháng", price: 1200000, duration: 30 },
+    "basic-quarterly": { name: "Basic - Quý", price: 1400000, duration: 90 },
+    "standard-quarterly": {
+      name: "Standard - Quý",
+      price: 2200000,
+      duration: 90,
+    },
+    "vip-quarterly": { name: "VIP - Quý", price: 3300000, duration: 90 },
+    "basic-annual": { name: "Basic - Năm", price: 5000000, duration: 365 },
+    "standard-annual": {
+      name: "Standard - Năm",
+      price: 8000000,
+      duration: 365,
+    },
+    "vip-annual": { name: "VIP - Năm", price: 12000000, duration: 365 },
+  };
+
+  // Check if membership is expiring soon (within 7 days)
+  const isExpiringSoon = (endDate) => {
+    const end = new Date(endDate);
+    const today = new Date();
+    const diffTime = end - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7 && diffDays >= 0;
+  };
+
+  // Check if membership is expired
+  const isExpired = (endDate) => {
+    const end = new Date(endDate);
+    const today = new Date();
+    return end < today;
+  };
+
+  // Calculate new dates for renewal
+  const calculateRenewalDates = (oldEndDate, packageType) => {
+    const oldEnd = new Date(oldEndDate);
+    const today = new Date();
+
+    // If already expired, start from today, otherwise start from day after old end date
+    const newStart =
+      oldEnd < today ? today : new Date(oldEnd.getTime() + 24 * 60 * 60 * 1000);
+
+    const packageInfo = membershipPackages[packageType];
+    const duration = packageInfo ? packageInfo.duration : 30;
+
+    const newEnd = new Date(
+      newStart.getTime() + duration * 24 * 60 * 60 * 1000
+    );
+
+    return { newStart, newEnd };
+  };
+
+  // Open renewal modal
+  const openRenewModal = (membership) => {
+    setMembershipToRenew(membership);
+    setRenewalPackage(membership.type || "standard-monthly");
+    setRenewalPaymentStatus(true);
+    setShowRenewModal(true);
+  };
+
+  // Handle renewal
+  const handleRenewMembership = async () => {
+    if (!membershipToRenew || !renewalPackage) {
+      alert("Vui lòng chọn gói gia hạn");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      const packageInfo = membershipPackages[renewalPackage];
+
+      const response = await axios.post(
+        `http://localhost:5000/api/memberships/renew/${membershipToRenew._id}`,
+        {
+          type: renewalPackage,
+          price: packageInfo.price,
+          paymentStatus: renewalPaymentStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Update UI with new membership data
+      setMemberships(
+        memberships.map((m) =>
+          m._id === membershipToRenew._id
+            ? { ...m, ...response.data.membership }
+            : m
+        )
+      );
+
+      // Close modal
+      setShowRenewModal(false);
+      setMembershipToRenew(null);
+      setRenewalPackage("");
+
+      alert("Gia hạn thẻ thành công!");
+    } catch (error) {
+      console.error("Error renewing membership:", error);
+      alert(
+        error.response?.data?.message || "Không thể gia hạn thẻ thành viên"
+      );
+    }
   };
 
   if (loading) return <div className="p-6 pt-24 text-center">Đang tải...</div>;
@@ -292,31 +420,59 @@ export default function MembershipManagement() {
                       {formatDate(membership.endDate)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          membership.status === "active"
-                            ? "bg-green-100 text-green-800"
+                      <div className="flex flex-col space-y-1">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            membership.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : membership.status === "expired"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : membership.status === "cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {membership.status === "active"
+                            ? "Hoạt động"
                             : membership.status === "expired"
-                            ? "bg-yellow-100 text-yellow-800"
+                            ? "Hết hạn"
                             : membership.status === "cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {membership.status === "active"
-                          ? "Hoạt động"
-                          : membership.status === "expired"
-                          ? "Hết hạn"
-                          : membership.status === "cancelled"
-                          ? "Đã hủy"
-                          : "Chờ thanh toán"}
-                      </span>
+                            ? "Đã hủy"
+                            : "Chờ thanh toán"}
+                        </span>
+                        {/* Warning badge for expiring soon */}
+                        {membership.status === "active" &&
+                          isExpiringSoon(membership.endDate) && (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                              ⚠️ Sắp hết hạn
+                            </span>
+                          )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {membership.price?.toLocaleString()}đ
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex flex-col space-y-2">
+                        {/* Hiển thị nút Gia hạn cho các thẻ không bị hủy */}
+                        {membership.status !== "cancelled" && (
+                          <button
+                            onClick={() => openRenewModal(membership)}
+                            className={`${
+                              isExpiringSoon(membership.endDate) ||
+                              isExpired(membership.endDate)
+                                ? "text-blue-600 hover:text-blue-900 font-semibold"
+                                : "text-blue-600 hover:text-blue-900"
+                            }`}
+                          >
+                            {isExpiringSoon(membership.endDate)
+                              ? "⚠️ Gia hạn thẻ"
+                              : isExpired(membership.endDate)
+                              ? "🔴 Gia hạn thẻ"
+                              : "Gia hạn thẻ"}
+                          </button>
+                        )}
+
                         {membership.status === "active" && (
                           <>
                             <button
@@ -419,6 +575,184 @@ export default function MembershipManagement() {
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Xóa vĩnh viễn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Renewal Modal */}
+      {showRenewModal && membershipToRenew && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold mb-6 text-indigo-600">
+              Gia hạn thẻ thành viên
+            </h3>
+
+            {/* Current Membership Info */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h4 className="font-semibold text-gray-700 mb-3">
+                Thông tin thẻ hiện tại
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Thành viên</p>
+                  <p className="font-medium">
+                    {membershipToRenew.user?.username || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Loại thẻ hiện tại</p>
+                  <p className="font-medium">{membershipToRenew.type}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Ngày bắt đầu</p>
+                  <p className="font-medium">
+                    {formatDate(membershipToRenew.startDate)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Ngày hết hạn cũ</p>
+                  <p className="font-medium text-red-600">
+                    {formatDate(membershipToRenew.endDate)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status badges */}
+              <div className="mt-3 flex gap-2">
+                {isExpired(membershipToRenew.endDate) && (
+                  <span className="px-3 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                    Đã hết hạn
+                  </span>
+                )}
+                {isExpiringSoon(membershipToRenew.endDate) &&
+                  !isExpired(membershipToRenew.endDate) && (
+                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                      Sắp hết hạn
+                    </span>
+                  )}
+              </div>
+            </div>
+
+            {/* Select Renewal Package */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Chọn gói gia hạn mới
+              </label>
+              <select
+                value={renewalPackage}
+                onChange={(e) => setRenewalPackage(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                {Object.entries(membershipPackages).map(([key, pkg]) => (
+                  <option key={key} value={key}>
+                    {pkg.name} - {formatPrice(pkg.price)} ({pkg.duration} ngày)
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Preview New Dates */}
+            {renewalPackage && (
+              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                <h4 className="font-semibold text-blue-800 mb-3">
+                  Thông tin gia hạn mới
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-blue-600">Ngày bắt đầu mới</p>
+                    <p className="font-medium text-blue-900">
+                      {formatDate(
+                        calculateRenewalDates(
+                          membershipToRenew.endDate,
+                          renewalPackage
+                        ).newStart
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600">Ngày hết hạn mới</p>
+                    <p className="font-medium text-blue-900">
+                      {formatDate(
+                        calculateRenewalDates(
+                          membershipToRenew.endDate,
+                          renewalPackage
+                        ).newEnd
+                      )}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600">Giá gói mới</p>
+                    <p className="font-bold text-blue-900 text-lg">
+                      {formatPrice(membershipPackages[renewalPackage].price)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600">Thời hạn</p>
+                    <p className="font-medium text-blue-900">
+                      {membershipPackages[renewalPackage].duration} ngày
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-100 rounded border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Preview:</span> Gia hạn từ{" "}
+                    <span className="font-semibold">
+                      {formatDate(membershipToRenew.endDate)}
+                    </span>{" "}
+                    sang{" "}
+                    <span className="font-semibold">
+                      {formatDate(
+                        calculateRenewalDates(
+                          membershipToRenew.endDate,
+                          renewalPackage
+                        ).newEnd
+                      )}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Status */}
+            <div className="mb-6">
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={renewalPaymentStatus}
+                  onChange={(e) => setRenewalPaymentStatus(e.target.checked)}
+                  className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Đã thanh toán (kích hoạt ngay)
+                </span>
+              </label>
+              {!renewalPaymentStatus && (
+                <p className="text-xs text-gray-500 mt-2 ml-8">
+                  Nếu chưa thanh toán, thẻ sẽ ở trạng thái "Chờ thanh toán"
+                </p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowRenewModal(false);
+                  setMembershipToRenew(null);
+                  setRenewalPackage("");
+                }}
+                className="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleRenewMembership}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+              >
+                Xác nhận gia hạn
               </button>
             </div>
           </div>

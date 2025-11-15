@@ -193,6 +193,7 @@ function App({ appName }) {
               notifications={newNotifications}
               onMarkAsRead={markAsRead}
               onRemove={removeNewNotification}
+              userRole={user?.role || "user"}
             />
           )}
         </div>

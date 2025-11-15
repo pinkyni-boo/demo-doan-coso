@@ -8,6 +8,7 @@ import {
   upgradeMembership,
   getMembershipById,
   deleteMembership,
+  renewMembership,
 } from "../controllers/membershipController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -41,5 +42,8 @@ router.delete(
   verifyAdmin,
   deleteMembership
 );
+
+// Gia hạn thẻ thành viên (chỉ cho admin)
+router.post("/renew/:id", verifyToken, verifyAdmin, renewMembership);
 
 export default router;
