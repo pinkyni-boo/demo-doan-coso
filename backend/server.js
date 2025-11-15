@@ -22,6 +22,7 @@ import roomRoutes from "./routes/roomRoutes.js";
 import equipmentRoutes from "./routes/equipmentRoutes.js";
 import issueReportRoutes from "./routes/issueReportRoutes.js";
 import maintenanceRoutes from "./routes/maintenanceRoutes.js";
+import sessionContentRoutes from "./routes/sessionContentRoutes.js";
 
 dotenv.config({ path: "./backend/.env" });
 
@@ -53,6 +54,7 @@ app.use("/api/rooms", roomRoutes);
 app.use("/api/equipment", equipmentRoutes);
 app.use("/api/issue-reports", issueReportRoutes);
 app.use("/api/maintenance", maintenanceRoutes);
+app.use("/api/session-content", sessionContentRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;

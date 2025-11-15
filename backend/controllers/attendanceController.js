@@ -1061,3 +1061,44 @@ export const getAllTrainersWithClasses = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get attendance history for a specific user in a specific class
+ */
+export const getUserClassAttendance = async (req, res) => {
+  try {
+    const { classId, userId } = req.params;
+
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(classId) || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID không hợp lệ",
+      });
+    }
+
+    // Check authorization: user can only see their own attendance, or admin/trainer
+    const requesterId = req.user.id || req.user._id;
+    if (requesterId.toString() !== userId && req.user.role !== "admin" && req.user.role !== "trainer") {
+      return res.status(403).json({
+        success: false,
+        message: "Bạn không có quyền xem thông tin này",
+      });
+    }
+
+    // Get attendance records
+    const attendanceRecords = await Attendance.find({
+      classId: new mongoose.Types.ObjectId(classId),
+      userId: new mongoose.Types.ObjectId(userId),
+    }).sort({ sessionNumber: 1 });
+
+    res.json(attendanceRecords);
+  } catch (error) {
+    console.error("Error getting user class attendance:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy lịch sử điểm danh",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};

@@ -77,6 +77,20 @@ export default function UserClasses() {
     }
   }, [navigate]);
 
+  // Auto-refresh when window regains focus
+  useEffect(() => {
+    const handleFocus = () => {
+      if (userId) {
+        fetchUserClasses(userId, false);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [userId]);
+
   const fetchUserClasses = async (uid, showLoader = true) => {
     try {
       if (showLoader) setLoading(true);

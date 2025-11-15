@@ -8,6 +8,7 @@ import {
   getClassSessions,
   updateClassSession,
   getPaidStudentsCount,
+  getUserClassAttendance,
 } from "../controllers/attendanceController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 
@@ -34,6 +35,9 @@ router.get("/class/:classId/report", verifyToken, getClassReport);
 
 // Lấy danh sách sessions
 router.get("/class/:classId/sessions", verifyToken, getClassSessions);
+
+// Get user's attendance history for a specific class
+router.get("/class/:classId/user/:userId", verifyToken, getUserClassAttendance);
 
 // Thêm route mới
 router.get("/class/:classId/paid-students", verifyToken, getPaidStudentsCount);
@@ -69,14 +73,26 @@ router.get("/user/:userId/report", verifyToken, async (req, res) => {
       });
     }
 
-    // Tạm thời trả về dữ liệu rỗng
+    const Attendance = mongoose.model("Attendance");
+
+    // Get all attendance records for this user
+    const attendanceRecords = await Attendance.find({
+      userId: new mongoose.Types.ObjectId(userId),
+    }).populate("classId", "className");
+
+    // Calculate stats
+    const totalSessions = attendanceRecords.length;
+    const attendedSessions = attendanceRecords.filter(r => r.isPresent).length;
+    const missedSessions = totalSessions - attendedSessions;
+    const attendanceRate = totalSessions > 0 ? (attendedSessions / totalSessions) * 100 : 0;
+
     res.json({
-      attendanceRecords: [],
+      attendanceRecords,
       stats: {
-        totalSessions: 0,
-        attendedSessions: 0,
-        missedSessions: 0,
-        attendanceRate: 0,
+        totalSessions,
+        attendedSessions,
+        missedSessions,
+        attendanceRate: attendanceRate.toFixed(2),
       },
     });
   } catch (error) {

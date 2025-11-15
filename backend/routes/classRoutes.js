@@ -11,6 +11,8 @@ import {
   getClassById,
   getClassDetails,
   updateEnrollmentPayment,
+  getUserScheduleChanges,
+  getClassScheduleChanges,
 } from "../controllers/classController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -34,6 +36,7 @@ router.get("/", getAllClasses);
 // User routes
 router.post("/enroll", debugMiddleware, verifyToken, enrollClass);
 router.get("/user/:userId", verifyToken, getUserClasses);
+router.get("/schedule-changes", verifyToken, getUserScheduleChanges);
 router.delete("/enrollment/:enrollmentId", verifyToken, deleteEnrollment);
 router.put("/enrollment/payment", verifyToken, updateEnrollmentPayment);
 
@@ -45,6 +48,7 @@ router.get("/:classId/members", verifyToken, verifyAdmin, getClassMembers);
 
 // Dynamic routes (đặt cuối cùng)
 router.get("/:id/details", getClassDetails);
+router.get("/:classId/schedule-changes", verifyToken, getClassScheduleChanges);
 router.get("/:id", getClassById);
 
 export default router;

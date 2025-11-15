@@ -34,8 +34,32 @@ const ClassCard = ({ classItem, currentDate, onScheduleChange }) => {
     const schedule = parseSchedule(classItem.schedule);
     if (!schedule) return null;
 
+    const handleCancelledClick = () => {
+      // Navigate to class detail page - extract real classId from the composite ID
+      if (classItem._id && classItem._id.startsWith('cancelled-')) {
+        // Extract classId from format: "cancelled-{classId}-{date}"
+        const parts = classItem._id.split('-');
+        if (parts.length >= 2) {
+          const realClassId = parts[1];
+          navigate(`/trainer/class/${realClassId}`);
+        }
+      } else if (classItem._id) {
+        navigate(`/trainer/class/${classItem._id}`);
+      }
+    };
+
     return (
-      <div className="p-3 rounded-lg border-l-4 border-gray-400 bg-gray-50 opacity-75">
+      <div 
+        className="p-3 rounded-lg border-l-4 border-gray-400 bg-gray-50 opacity-75 cursor-pointer hover:opacity-90 transition-all"
+        onClick={handleCancelledClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleCancelledClick();
+          }
+        }}
+      >
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-semibold text-sm text-gray-600 line-through truncate">
             {classItem.className}
@@ -59,8 +83,27 @@ const ClassCard = ({ classItem, currentDate, onScheduleChange }) => {
 
   // Makeup class
   if (classItem.isMakeup) {
+    const handleMakeupClick = () => {
+      // Navigate to class detail page using classId
+      if (classItem.classId) {
+        navigate(`/trainer/class/${classItem.classId}`);
+      } else if (classItem._id && !classItem._id.startsWith('makeup-')) {
+        navigate(`/trainer/class/${classItem._id}`);
+      }
+    };
+
     return (
-      <div className="p-3 rounded-lg border-l-4 border-orange-400 bg-orange-50 hover:shadow-md transition-all cursor-pointer">
+      <div 
+        className="p-3 rounded-lg border-l-4 border-orange-400 bg-orange-50 hover:shadow-md transition-all cursor-pointer"
+        onClick={handleMakeupClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleMakeupClick();
+          }
+        }}
+      >
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-semibold text-sm text-orange-900 truncate">
             {classItem.className}

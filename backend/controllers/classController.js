@@ -3,6 +3,7 @@ import ClassEnrollment from "../models/ClassEnrollment.js";
 import Attendance from "../models/Attendance.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
+import ScheduleChangeRequest from "../models/ScheduleChangeRequest.js";
 import mongoose from "mongoose";
 
 // Hàm helper để update status tự động
@@ -784,5 +785,101 @@ export const getClasses = async (req, res) => {
   } catch (error) {
     console.error("Error fetching classes:", error);
     res.status(500).json({ message: "Lỗi server khi lấy danh sách lớp học" });
+  }
+};
+
+// Lấy thông tin thay đổi lịch cho các lớp học của user
+export const getUserScheduleChanges = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { dateFrom, dateTo } = req.query;
+
+    // Lấy danh sách các lớp học mà user đã đăng ký
+    const enrollments = await ClassEnrollment.find({
+      user: userId,
+      paymentStatus: true, // Chỉ lấy các lớp đã thanh toán
+    }).select('class');
+
+    const classIds = enrollments.map(e => e.class);
+
+    // Lấy các yêu cầu thay đổi lịch đã được duyệt cho các lớp này
+    const filter = {
+      class: { $in: classIds },
+      status: 'approved',
+    };
+
+    // Thêm filter theo ngày nếu có
+    if (dateFrom || dateTo) {
+      filter.$or = [];
+      if (dateFrom && dateTo) {
+        filter.$or.push({
+          originalDate: {
+            $gte: new Date(dateFrom),
+            $lte: new Date(dateTo),
+          }
+        });
+        filter.$or.push({
+          'makeupSchedule.date': {
+            $gte: new Date(dateFrom),
+            $lte: new Date(dateTo),
+          }
+        });
+      } else if (dateFrom) {
+        filter.$or.push({
+          originalDate: { $gte: new Date(dateFrom) }
+        });
+        filter.$or.push({
+          'makeupSchedule.date': { $gte: new Date(dateFrom) }
+        });
+      } else if (dateTo) {
+        filter.$or.push({
+          originalDate: { $lte: new Date(dateTo) }
+        });
+        filter.$or.push({
+          'makeupSchedule.date': { $lte: new Date(dateTo) }
+        });
+      }
+    }
+
+    const scheduleChanges = await ScheduleChangeRequest.find(filter)
+      .populate('class', 'className location service')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: scheduleChanges,
+    });
+  } catch (error) {
+    console.error('Error fetching user schedule changes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy thông tin thay đổi lịch',
+    });
+  }
+};
+
+// Get schedule changes for a specific class
+export const getClassScheduleChanges = async (req, res) => {
+  try {
+    const { classId } = req.params;
+
+    // Lấy các yêu cầu thay đổi lịch đã được duyệt cho lớp này
+    const scheduleChanges = await ScheduleChangeRequest.find({
+      class: classId,
+      status: 'approved',
+    })
+      .populate('class', 'className location service')
+      .sort({ originalDate: 1 });
+
+    res.json({
+      success: true,
+      data: scheduleChanges,
+    });
+  } catch (error) {
+    console.error('Error fetching class schedule changes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi server khi lấy thông tin thay đổi lịch',
+    });
   }
 };

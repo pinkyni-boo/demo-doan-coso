@@ -40,17 +40,29 @@ export default function UserSchedule() {
   const [maintenanceSchedules, setMaintenanceSchedules] = useState([]);
   const [showMaintenance, setShowMaintenance] = useState(true);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  
+  // Schedule change states
+  const [scheduleChanges, setScheduleChanges] = useState([]);
+  const [makeupSchedules, setMakeupSchedules] = useState([]);
+  const [cancelledOriginalDates, setCancelledOriginalDates] = useState([]);
+  
+  // Session content popup states
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [selectedSessionContent, setSelectedSessionContent] = useState(null);
+  const [contentLoading, setContentLoading] = useState(false);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem("user"));
     setUser(userData);
     fetchUserEnrollments();
     fetchMaintenanceSchedules();
+    fetchScheduleChanges();
   }, []);
 
   // Fetch maintenance schedules when week changes
   useEffect(() => {
     fetchMaintenanceSchedules();
+    fetchScheduleChanges();
   }, [currentWeek]);
 
   const fetchUserEnrollments = async () => {
@@ -219,6 +231,101 @@ export default function UserSchedule() {
     }
   };
 
+  // Fetch schedule changes
+  const fetchScheduleChanges = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        return;
+      }
+
+      const weekDates = getWeekDates(currentWeek);
+      const startDate = weekDates[0].toISOString().split('T')[0];
+      const endDate = weekDates[6].toISOString().split('T')[0];
+
+      const response = await axios.get(
+        `http://localhost:5000/api/classes/schedule-changes`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            dateFrom: startDate,
+            dateTo: endDate,
+          }
+        }
+      );
+
+      if (response.data && response.data.success) {
+        const changes = response.data.data || [];
+        setScheduleChanges(changes);
+
+        // Extract makeup schedules
+        const makeups = changes
+          .filter(r => r.status === 'approved' && r.makeupSchedule)
+          .map(r => ({
+            id: r._id,
+            classId: r.class?._id,
+            className: r.class?.className,
+            location: r.makeupSchedule.location,
+            date: r.makeupSchedule.date,
+            startTime: r.makeupSchedule.startTime,
+            endTime: r.makeupSchedule.endTime,
+            originalDate: r.originalDate,
+          }));
+        setMakeupSchedules(makeups);
+
+        // Extract cancelled original dates
+        const cancelledDates = changes
+          .filter(r => r.status === 'approved' && r.makeupSchedule)
+          .map(r => ({
+            classId: r.class?._id,
+            className: r.class?.className,
+            originalDate: r.originalDate,
+            location: r.class?.location,
+          }));
+        setCancelledOriginalDates(cancelledDates);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule changes:', error);
+      setScheduleChanges([]);
+      setMakeupSchedules([]);
+      setCancelledOriginalDates([]);
+    }
+  };
+  
+  const fetchSessionContent = async (classId, sessionNumber) => {
+    try {
+      setContentLoading(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `http://localhost:5000/api/session-content/${classId}/${sessionNumber}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success && response.data.content) {
+        setSelectedSessionContent(response.data.content);
+      } else {
+        setSelectedSessionContent(null);
+      }
+    } catch (error) {
+      console.error("Error fetching session content:", error);
+      setSelectedSessionContent(null);
+    } finally {
+      setContentLoading(false);
+    }
+  };
+  
+  const handleViewSessionContent = async (classId, sessionNumber) => {
+    setShowContentModal(true);
+    await fetchSessionContent(classId, sessionNumber);
+  };
+
   // Get week dates helper
   const getWeekDates = (weekStart) => {
     const startOfWeek = new Date(weekStart);
@@ -317,6 +424,12 @@ export default function UserSchedule() {
       });
     }
     
+    // Sort sessions by date and assign session numbers
+    sessions.sort((a, b) => new Date(a.date) - new Date(b.date));
+    sessions.forEach((session, index) => {
+      session.sessionNumber = index + 1;
+    });
+    
     return sessions;
   };
 
@@ -356,13 +469,74 @@ export default function UserSchedule() {
     const allSessions = getSessionsForWeek();
     const weekDates = getWeekDates(currentWeek);
     const targetDate = weekDates[dayIndex];
+    targetDate.setHours(0, 0, 0, 0);
+
+    // Check for cancelled sessions on this day
+    const cancelledOnThisDay = cancelledOriginalDates.filter((cancelled) => {
+      const cancelledDate = new Date(cancelled.originalDate);
+      cancelledDate.setHours(0, 0, 0, 0);
+      return cancelledDate.getTime() === targetDate.getTime();
+    });
     
-    return allSessions.filter(session => {
+    // Filter regular sessions and exclude cancelled ones
+    const regularSessions = allSessions.filter(session => {
       const sessionDate = new Date(session.date);
       sessionDate.setHours(0, 0, 0, 0);
-      targetDate.setHours(0, 0, 0, 0);
-      return sessionDate.getTime() === targetDate.getTime();
+      
+      if (sessionDate.getTime() !== targetDate.getTime()) {
+        return false;
+      }
+
+      // Check if this session is cancelled
+      const isCancelled = cancelledOnThisDay.some(
+        (cancelled) => cancelled.classId === session.classId
+      );
+
+      return !isCancelled;
     });
+
+    // Get makeup sessions for this day
+    const makeupSessions = makeupSchedules
+      .filter((makeup) => {
+        const makeupDate = new Date(makeup.date);
+        makeupDate.setHours(0, 0, 0, 0);
+        return makeupDate.getTime() === targetDate.getTime();
+      })
+      .map((makeup) => ({
+        classId: makeup.classId,
+        className: makeup.className,
+        date: new Date(makeup.date),
+        startTime: makeup.startTime,
+        endTime: makeup.endTime,
+        location: makeup.location,
+        status: 'enrolled',
+        isMakeup: true,
+      }));
+
+    // Get cancelled sessions to display (optional - shows what was cancelled)
+    const cancelledSessions = cancelledOnThisDay
+      .map((cancelled) => {
+        const enrollment = enrollments.find(e => e.class?._id === cancelled.classId);
+        if (!enrollment || !enrollment.class) return null;
+
+        const cls = enrollment.class;
+        const schedule = generateClassSchedule(cls, enrollment);
+        const cancelledSession = schedule.find(s => {
+          const sDate = new Date(s.date);
+          sDate.setHours(0, 0, 0, 0);
+          return sDate.getTime() === targetDate.getTime();
+        });
+
+        if (!cancelledSession) return null;
+
+        return {
+          ...cancelledSession,
+          isCancelled: true,
+        };
+      })
+      .filter(Boolean);
+
+    return [...regularSessions, ...makeupSessions];
   };
 
   const weekDates = getWeekDates(currentWeek);
@@ -393,6 +567,58 @@ export default function UserSchedule() {
     const today = new Date();
     const isToday = session.date.toDateString() === today.toDateString();
     const isPast = session.date < today;
+    const isMakeup = session.isMakeup;
+    
+    // Makeup class styling
+    if (isMakeup) {
+      return (
+        <div className="bg-orange-50 rounded-lg p-3 border-l-4 border-orange-400 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm text-orange-900 truncate">
+                {session.className}
+              </h4>
+              <div className="mt-1">
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-200 text-orange-800">
+                  Lịch học bù
+                </span>
+              </div>
+              
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center text-xs text-orange-700">
+                  <Clock className="w-3 h-3 mr-1" />
+                  <span>{session.startTime} - {session.endTime}</span>
+                </div>
+                
+                {session.location && (
+                  <div className="flex items-center text-xs text-orange-700">
+                    <MapPin className="w-3 h-3 mr-1" />
+                    <span className="truncate">{session.location}</span>
+                  </div>
+                )}
+                
+                {session.instructor && (
+                  <div className="flex items-center text-xs text-orange-700">
+                    <UserIcon className="w-3 h-3 mr-1" />
+                    <span className="truncate">{session.instructor}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-2 pt-2 border-t border-orange-100">
+            <button
+              onClick={() => handleViewSessionContent(session.classId, session.sessionNumber)}
+              className="flex items-center text-xs font-semibold px-3 py-1 rounded-lg shadow-md hover:shadow-lg transition-all border bg-orange-600 text-white hover:bg-orange-700 border-orange-600"
+            >
+              <BookOpen className="w-3 h-3 mr-1" />
+              Nội dung
+            </button>
+          </div>
+        </div>
+      );
+    }
     
     return (
       <div className={`bg-white rounded-lg p-3 border-l-4 shadow-sm hover:shadow-md transition-shadow ${
@@ -451,15 +677,15 @@ export default function UserSchedule() {
         
         <div className="mt-2 pt-2 border-t border-gray-100">
           <button
-            onClick={() => navigate(`/classes/${session.classId}`)}
+            onClick={() => handleViewSessionContent(session.classId, session.sessionNumber)}
             className={`flex items-center text-xs font-semibold px-3 py-1 rounded-lg shadow-md hover:shadow-lg transition-all border ${
               isToday ? 'bg-vintage-gold text-vintage-dark hover:bg-yellow-500 border-vintage-gold' :
               isPast ? 'bg-vintage-warm text-vintage-dark hover:bg-yellow-300 border-vintage-gold' :
               'bg-vintage-gold text-vintage-dark hover:bg-yellow-500 border-vintage-gold'
             }`}
           >
-            <Eye className="w-3 h-3 mr-1" />
-            Chi tiết
+            <BookOpen className="w-3 h-3 mr-1" />
+            Nội dung
           </button>
         </div>
       </div>
@@ -699,6 +925,60 @@ export default function UserSchedule() {
           )}
         </div>
       </div>
+      
+      {/* Session Content Modal */}
+      {showContentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <BookOpen className="h-6 w-6 text-white" />
+                <h2 className="text-xl font-bold text-white">
+                  Nội dung buổi học
+                </h2>
+              </div>
+              <button
+                onClick={() => setShowContentModal(false)}
+                className="text-white hover:bg-white/20 p-2 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+              {contentLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Đang tải nội dung...</p>
+                </div>
+              ) : selectedSessionContent ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      {selectedSessionContent.title}
+                    </h3>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">Nội dung:</h4>
+                    <p className="text-gray-600 whitespace-pre-wrap">{selectedSessionContent.content}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-600">Chưa có nội dung buổi học</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Giáo viên chưa thêm nội dung cho buổi học này
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

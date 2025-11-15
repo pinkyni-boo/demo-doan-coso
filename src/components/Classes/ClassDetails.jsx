@@ -45,13 +45,26 @@ export default function ClassDetails() {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [user, setUser] = useState(null);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [showAttendanceHistory, setShowAttendanceHistory] = useState(false);
+  const [sessionContents, setSessionContents] = useState({});
+  const [loadingContents, setLoadingContents] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      fetchClassDetails();
+      // Fetch attendance if user is enrolled
+      if (parsedUser) {
+        fetchAttendanceHistory(parsedUser._id || parsedUser.id);
+        fetchSessionContents();
+      }
+    } else {
+      fetchClassDetails();
     }
-    fetchClassDetails();
   }, [id]);
 
   const fetchClassDetails = async () => {
@@ -67,6 +80,66 @@ export default function ClassDetails() {
       navigate("/classes");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAttendanceHistory = async (userId) => {
+    try {
+      setLoadingAttendance(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `http://localhost:5000/api/attendance/class/${id}/user/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data && Array.isArray(response.data)) {
+        // Filter to only show past sessions (up to today)
+        const today = new Date();
+        today.setHours(23, 59, 59, 999); // End of today
+        
+        const pastSessions = response.data.filter(record => {
+          const sessionDate = new Date(record.sessionDate);
+          return sessionDate <= today;
+        });
+        
+        setAttendanceHistory(pastSessions.sort((a, b) => a.sessionNumber - b.sessionNumber));
+      }
+    } catch (error) {
+      console.error("Error fetching attendance history:", error);
+      // Don't show error toast, just log it
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
+
+  const fetchSessionContents = async () => {
+    try {
+      setLoadingContents(true);
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await axios.get(
+        `http://localhost:5000/api/session-content/class/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.success) {
+        const contentsMap = {};
+        response.data.data.forEach(content => {
+          contentsMap[content.sessionNumber] = content;
+        });
+        setSessionContents(contentsMap);
+      }
+    } catch (error) {
+      console.error("Error fetching session contents:", error);
+    } finally {
+      setLoadingContents(false);
     }
   };
 
@@ -457,6 +530,95 @@ export default function ClassDetails() {
                 </div>
               </VintageCard>
             </motion.div>
+
+            {/* Attendance History Card */}
+            {user && attendanceHistory.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <VintageCard className="p-6 shadow-elegant">
+                  <div className="flex items-center justify-between mb-4">
+                    <VintageHeading level={4} className="text-vintage-dark">
+                      Lịch sử điểm danh
+                    </VintageHeading>
+                    <button
+                      onClick={() => setShowAttendanceHistory(!showAttendanceHistory)}
+                      className="text-vintage-primary hover:text-vintage-gold transition-colors"
+                    >
+                      <Eye className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  {showAttendanceHistory && (
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {loadingAttendance ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vintage-primary mx-auto"></div>
+                        </div>
+                      ) : (
+                        attendanceHistory.map((record, index) => (
+                          <motion.div
+                            key={record._id || index}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className={`flex items-center justify-between p-3 rounded-lg ${
+                              record.isPresent
+                                ? 'bg-green-50 border border-green-200'
+                                : 'bg-red-50 border border-red-200'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3 flex-1">
+                              {record.isPresent ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <XCircle className="h-5 w-5 text-red-600" />
+                              )}
+                              <div className="flex-1">
+                                <div className="font-semibold text-sm">
+                                  Buổi {record.sessionNumber}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {new Date(record.sessionDate).toLocaleDateString('vi-VN')}
+                                </div>
+                                {sessionContents[record.sessionNumber] && (
+                                  <div className="mt-2 text-xs">
+                                    <div className="font-medium text-purple-700 mb-1">
+                                      📚 {sessionContents[record.sessionNumber].title}
+                                    </div>
+                                    <div className="text-gray-600 line-clamp-2">
+                                      {sessionContents[record.sessionNumber].content}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className={`text-xs font-medium ${
+                              record.isPresent ? 'text-green-700' : 'text-red-700'
+                            }`}>
+                              {record.isPresent ? 'Có mặt' : 'Vắng'}
+                            </div>
+                          </motion.div>
+                        ))
+                      )}
+                      {!loadingAttendance && attendanceHistory.length === 0 && (
+                        <div className="text-center py-4 text-gray-500">
+                          Chưa có lịch sử điểm danh
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!showAttendanceHistory && (
+                    <div className="text-center text-sm text-gray-600 py-2">
+                      Nhấn biểu tượng mắt để xem chi tiết
+                    </div>
+                  )}
+                </VintageCard>
+              </motion.div>
+            )}
 
           </div>
         </VintageGrid>
