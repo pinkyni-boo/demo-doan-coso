@@ -373,15 +373,23 @@ export default function AttendanceFlow() {
 
         // Transform backend response to match our session format
         const backendSessions = fullScheduleResponse.data.fullSchedule.map(
-          (session) => ({
-            sessionNumber: session.sessionNumber,
-            sessionDate: session.scheduledDate,
-            totalStudents: session.totalStudents || 0,
-            presentCount: session.presentCount || 0,
-            isFromDatabase: session.hasAttendanceRecord,
-            isFromSchedule: !session.hasAttendanceRecord,
-            status: session.status,
-          })
+          (session) => {
+            // Logic: displayDate = makeupDate ?? originalDate
+            const displayDate = session.makeupDate || session.originalDate;
+
+            return {
+              sessionNumber: session.sessionNumber,
+              sessionDate: displayDate, // Ngày hiển thị (ưu tiên makeupDate)
+              originalDate: session.originalDate, // Ngày gốc
+              makeupDate: session.makeupDate, // Ngày dạy bù (có thể null)
+              isRescheduled: session.isRescheduled || false,
+              totalStudents: session.totalStudents || 0,
+              presentCount: session.presentCount || 0,
+              isFromDatabase: session.hasAttendanceRecord,
+              isFromSchedule: !session.hasAttendanceRecord,
+              status: session.status,
+            };
+          }
         );
 
         console.log("Transformed backend sessions:", backendSessions);
@@ -583,10 +591,28 @@ export default function AttendanceFlow() {
     try {
       const token = localStorage.getItem("token");
 
+      // Logic: displayDate = makeupDate ?? originalDate
+      const displayDate = sessionData.makeupDate
+        ? new Date(sessionData.makeupDate)
+        : new Date(sessionData.sessionDate);
+
+      // Tạo note cho ngày dạy bù nếu có makeupDate
+      let sessionNote = "";
+      if (sessionData.makeupDate && sessionData.originalDate) {
+        const originalDateStr = new Date(
+          sessionData.originalDate
+        ).toLocaleDateString("vi-VN");
+        sessionNote = `Dạy bù từ ngày ${originalDateStr}`;
+      }
+
       console.log("Creating session in database:", {
         classId,
         sessionNumber: sessionData.sessionNumber,
-        sessionDate: sessionData.sessionDate.toISOString(),
+        sessionDate: displayDate.toISOString(),
+        originalDate: sessionData.originalDate || null,
+        makeupDate: sessionData.makeupDate || null,
+        isRescheduled: !!sessionData.makeupDate,
+        note: sessionNote,
       });
 
       await axios.post(
@@ -594,7 +620,10 @@ export default function AttendanceFlow() {
         {
           classId,
           sessionNumber: sessionData.sessionNumber,
-          sessionDate: sessionData.sessionDate.toISOString(),
+          sessionDate: displayDate.toISOString(), // Dùng displayDate
+          isRescheduled: !!sessionData.makeupDate,
+          originalDate: sessionData.originalDate || null,
+          rescheduleNote: sessionNote,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -1114,6 +1143,22 @@ export default function AttendanceFlow() {
                           >
                             {sessionDate.toLocaleDateString("vi-VN")}
                           </p>
+                          {/* Hiển thị note dạy bù nếu makeupDate != null */}
+                          {session.makeupDate && session.originalDate && (
+                            <div className="mt-2 p-2 bg-orange-50 border border-orange-200 rounded">
+                              <div className="flex items-center gap-1 mb-1">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                  📅 Ngày dạy bù
+                                </span>
+                              </div>
+                              <p className="text-xs text-orange-800 font-medium">
+                                Dạy bù từ ngày{" "}
+                                {new Date(
+                                  session.originalDate
+                                ).toLocaleDateString("vi-VN")}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Attendance stats */}

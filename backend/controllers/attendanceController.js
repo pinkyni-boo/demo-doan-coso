@@ -6,12 +6,22 @@ import mongoose from "mongoose";
 
 export const createSession = async (req, res) => {
   try {
-    const { classId, sessionNumber, sessionDate } = req.body;
+    const {
+      classId,
+      sessionNumber,
+      sessionDate,
+      isRescheduled,
+      originalDate,
+      rescheduleNote,
+    } = req.body;
 
     console.log("Creating session request:", {
       classId,
       sessionNumber,
       sessionDate,
+      isRescheduled,
+      originalDate,
+      rescheduleNote,
     });
 
     // Validate input
@@ -83,7 +93,9 @@ export const createSession = async (req, res) => {
       sessionDate: new Date(sessionDate),
       isPresent: false,
       checkinTime: null,
-      notes: "",
+      notes: rescheduleNote || "",
+      isRescheduled: isRescheduled || false,
+      originalDate: originalDate ? new Date(originalDate) : null,
     }));
 
     console.log("Attendance records to create:", attendanceRecords.length);
@@ -1070,7 +1082,10 @@ export const getUserClassAttendance = async (req, res) => {
     const { classId, userId } = req.params;
 
     // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(classId) || !mongoose.Types.ObjectId.isValid(userId)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(classId) ||
+      !mongoose.Types.ObjectId.isValid(userId)
+    ) {
       return res.status(400).json({
         success: false,
         message: "ID không hợp lệ",
@@ -1079,7 +1094,11 @@ export const getUserClassAttendance = async (req, res) => {
 
     // Check authorization: user can only see their own attendance, or admin/trainer
     const requesterId = req.user.id || req.user._id;
-    if (requesterId.toString() !== userId && req.user.role !== "admin" && req.user.role !== "trainer") {
+    if (
+      requesterId.toString() !== userId &&
+      req.user.role !== "admin" &&
+      req.user.role !== "trainer"
+    ) {
       return res.status(403).json({
         success: false,
         message: "Bạn không có quyền xem thông tin này",

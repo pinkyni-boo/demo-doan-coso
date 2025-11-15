@@ -32,6 +32,14 @@ const attendanceSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    isRescheduled: {
+      type: Boolean,
+      default: false,
+    },
+    originalDate: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -3,21 +3,34 @@ import { X, Save, BookOpen, Target, Dumbbell, FileText } from "lucide-react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-export default function SessionContentModal({ 
-  classId, 
-  sessionNumber, 
-  onClose, 
+export default function SessionContentModal({
+  classId,
+  sessionNumber,
+  classData,
+  sessionDates = [],
+  scheduleChanges = [],
+  onClose,
   onSave,
-  existingContent 
+  existingContent,
 }) {
+  const [selectedSession, setSelectedSession] = useState(sessionNumber || "");
   const [formData, setFormData] = useState({
     title: "",
     content: "",
     objectives: "",
     exercises: "",
-    notes: ""
+    notes: "",
   });
   const [saving, setSaving] = useState(false);
+
+  // Kiểm tra xem buổi học có phải là ngày dạy bù không
+  const isRescheduledSession = (sessionNum) => {
+    const session = sessionDates[sessionNum - 1];
+    if (!session) return false;
+
+    // Logic: có dạy bù nếu makeupDate != null
+    return !!session.makeupDate;
+  };
 
   useEffect(() => {
     if (existingContent) {
@@ -26,24 +39,29 @@ export default function SessionContentModal({
         content: existingContent.content || "",
         objectives: existingContent.objectives || "",
         exercises: existingContent.exercises || "",
-        notes: existingContent.notes || ""
+        notes: existingContent.notes || "",
       });
     }
   }, [existingContent]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.content.trim()) {
       toast.error("Vui lòng nhập tiêu đề và nội dung buổi học");
+      return;
+    }
+
+    if (!selectedSession) {
+      toast.error("Vui lòng chọn buổi học");
       return;
     }
 
@@ -55,11 +73,11 @@ export default function SessionContentModal({
         "http://localhost:5000/api/session-content",
         {
           classId,
-          sessionNumber,
-          ...formData
+          sessionNumber: parseInt(selectedSession),
+          ...formData,
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -70,21 +88,26 @@ export default function SessionContentModal({
       }
     } catch (error) {
       console.error("Error saving session content:", error);
-      toast.error(error.response?.data?.message || "Không thể lưu nội dung buổi học");
+      toast.error(
+        error.response?.data?.message || "Không thể lưu nội dung buổi học"
+      );
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+      style={{ zIndex: 9999 }}
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <BookOpen className="h-6 w-6 text-white" />
             <h2 className="text-xl font-bold text-white">
-              {existingContent ? "Sửa" : "Thêm"} Nội Dung Buổi {sessionNumber}
+              Thêm Nội Dung Buổi Học
             </h2>
           </div>
           <button
@@ -96,8 +119,55 @@ export default function SessionContentModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]"
+        >
           <div className="space-y-5">
+            {/* Chọn buổi học */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <span className="text-red-500">*</span> Chọn buổi học
+              </label>
+              <select
+                value={selectedSession}
+                onChange={(e) => setSelectedSession(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                disabled={!!existingContent}
+              >
+                <option value="">-- Chọn buổi học --</option>
+                {Array.from(
+                  { length: classData?.totalSessions || 0 },
+                  (_, i) => i + 1
+                ).map((num) => {
+                  const session = sessionDates[num - 1];
+                  if (!session) return null;
+
+                  // Logic: displayDate = makeupDate ?? originalDate
+                  const displayDate =
+                    session.makeupDate || session.originalDate;
+                  const dateStr = displayDate
+                    ? new Date(displayDate).toLocaleDateString("vi-VN")
+                    : "";
+                  const hasMakeup = !!session.makeupDate;
+
+                  return (
+                    <option key={num} value={num}>
+                      Buổi {num}
+                      {dateStr ? ` - ${dateStr}` : ""}
+                      {hasMakeup ? " (Dạy bù)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+              {existingContent && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Không thể thay đổi buổi học khi sửa nội dung
+                </p>
+              )}
+            </div>
+
             {/* Tiêu đề */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">

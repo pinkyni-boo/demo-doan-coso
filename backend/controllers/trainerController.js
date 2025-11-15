@@ -735,13 +735,67 @@ export const getClassFullSchedule = async (req, res) => {
       });
     }
 
+    // Lấy thông tin schedule changes đã được duyệt
+    const scheduleChanges = await ScheduleChangeRequest.find({
+      class: classId,
+      status: "approved",
+    });
+
+    console.log("Schedule changes found:", scheduleChanges.length);
+    scheduleChanges.forEach((change, idx) => {
+      console.log(`Change ${idx + 1}:`, {
+        originalDate: change.originalDate,
+        makeupDate: change.makeupSchedule?.date,
+        status: change.status,
+      });
+    });
+
     // Tính toán tất cả các ngày học dựa trên schedule
-    const sessionDates = calculateSessionDates(
+    let sessionDates = calculateSessionDates(
       classItem.startDate,
       classItem.endDate,
       classItem.schedule,
       classItem.totalSessions
     );
+
+    // Áp dụng schedule changes vào sessionDates
+    if (scheduleChanges.length > 0) {
+      scheduleChanges.forEach((change) => {
+        if (change.makeupSchedule && change.makeupSchedule.date) {
+          const originalDate = new Date(change.originalDate);
+          const makeupDate = new Date(change.makeupSchedule.date);
+
+          // Tìm session có ngày gốc
+          const sessionIndex = sessionDates.findIndex(
+            (session) =>
+              new Date(session.date).toDateString() ===
+              originalDate.toDateString()
+          );
+
+          if (sessionIndex !== -1) {
+            console.log(
+              `Applying schedule change for session ${
+                sessionDates[sessionIndex].sessionNumber
+              }: ${originalDate.toDateString()} -> ${makeupDate.toDateString()}`
+            );
+
+            // Thay thế ngày gốc bằng ngày dạy bù
+            sessionDates[sessionIndex] = {
+              ...sessionDates[sessionIndex],
+              date: makeupDate,
+              originalDate: originalDate,
+              isRescheduled: true,
+              startTime:
+                change.makeupSchedule.startTime ||
+                sessionDates[sessionIndex].startTime,
+              endTime:
+                change.makeupSchedule.endTime ||
+                sessionDates[sessionIndex].endTime,
+            };
+          }
+        }
+      });
+    }
 
     // Lấy thông tin attendance đã tạo
     const attendanceRecords = await Attendance.find({
@@ -769,9 +823,16 @@ export const getClassFullSchedule = async (req, res) => {
         (a) => a.notes !== "Empty session - no members enrolled"
       ).length;
 
+      // Logic hiển thị ngày: nếu có dạy bù thì dùng makeupDate, không thì dùng originalDate
+      const hasReschedule = session.isRescheduled && session.originalDate;
+
       return {
         sessionNumber: session.sessionNumber,
-        scheduledDate: session.date,
+        // Nếu có rescheduled, date là makeupDate, originalDate là ngày gốc
+        // Nếu không, date là originalDate, makeupDate null
+        originalDate: hasReschedule ? session.originalDate : session.date,
+        makeupDate: hasReschedule ? session.date : null,
+        isRescheduled: session.isRescheduled || false,
         dayOfWeek: session.dayOfWeek,
         startTime: session.startTime,
         endTime: session.endTime,

@@ -36,6 +36,91 @@ export default function TrainerClassDetail() {
   const [showContentModal, setShowContentModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [scheduleChanges, setScheduleChanges] = useState([]);
+  const [sessionDates, setSessionDates] = useState([]);
+
+  // Hàm tính toán ngày học cho mỗi buổi (có tính schedule changes)
+  // Trả về array of objects: { originalDate, makeupDate }
+  const calculateSessionDatesWithChanges = (classData, scheduleChangesList) => {
+    if (!classData || !classData.startDate || !classData.totalSessions) {
+      return [];
+    }
+
+    const sessions = [];
+    const startDate = new Date(classData.startDate);
+
+    // Parse schedule string to get days of week
+    let scheduleDays = [];
+    if (classData.schedule) {
+      const scheduleStr =
+        typeof classData.schedule === "string" ? classData.schedule : "";
+      const dayMapping = {
+        "Thứ 2": 1,
+        "Thứ 3": 2,
+        "Thứ 4": 3,
+        "Thứ 5": 4,
+        "Thứ 6": 5,
+        "Thứ 7": 6,
+        "Chủ nhật": 0,
+      };
+
+      Object.keys(dayMapping).forEach((day) => {
+        if (scheduleStr.includes(day)) {
+          scheduleDays.push(dayMapping[day]);
+        }
+      });
+    }
+
+    if (scheduleDays.length === 0) {
+      return [];
+    }
+
+    scheduleDays.sort((a, b) => a - b);
+    let currentDate = new Date(startDate);
+    let sessionCount = 0;
+    let maxIterations = 1000;
+
+    // Tạo sessions với originalDate
+    while (sessionCount < classData.totalSessions && maxIterations > 0) {
+      const dayOfWeek = currentDate.getDay();
+      if (scheduleDays.includes(dayOfWeek)) {
+        sessions.push({
+          originalDate: new Date(currentDate),
+          makeupDate: null, // Mặc định không có dạy bù
+        });
+        sessionCount++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+      maxIterations--;
+    }
+
+    // Áp dụng schedule changes
+    if (scheduleChangesList && scheduleChangesList.length > 0) {
+      scheduleChangesList.forEach((change) => {
+        if (
+          change.status === "approved" &&
+          change.makeupSchedule &&
+          change.makeupSchedule.date
+        ) {
+          const originalDate = new Date(change.originalDate);
+          const makeupDate = new Date(change.makeupSchedule.date);
+
+          // Tìm buổi học tương ứng với ngày gốc
+          const sessionIndex = sessions.findIndex(
+            (session) =>
+              new Date(session.originalDate).toDateString() ===
+              originalDate.toDateString()
+          );
+
+          if (sessionIndex !== -1) {
+            // Thêm makeupDate, giữ nguyên originalDate
+            sessions[sessionIndex].makeupDate = makeupDate;
+          }
+        }
+      });
+    }
+
+    return sessions;
+  };
 
   useEffect(() => {
     // Load user from localStorage
@@ -62,13 +147,13 @@ export default function TrainerClassDetail() {
       const response = await axios.get(
         `http://localhost:5000/api/session-content/class/${classId}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       if (response.data.success) {
         const contentsMap = {};
-        response.data.data.forEach(content => {
+        response.data.data.forEach((content) => {
           contentsMap[content.sessionNumber] = content;
         });
         setSessionContents(contentsMap);
@@ -77,14 +162,14 @@ export default function TrainerClassDetail() {
       console.error("Error fetching session contents:", error);
     }
   };
-  
+
   const fetchScheduleChanges = async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(
         `http://localhost:5000/api/classes/${classId}/schedule-changes`,
         {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
@@ -106,14 +191,14 @@ export default function TrainerClassDetail() {
         console.error("No token found");
         return;
       }
-      
+
       // Fetch schedule changes first and get the result
       let scheduleChangesList = [];
       try {
         const changesResponse = await axios.get(
           `http://localhost:5000/api/classes/${classId}/schedule-changes`,
           {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
         if (changesResponse.data.success) {
@@ -174,22 +259,27 @@ export default function TrainerClassDetail() {
         const attendanceHistory = sessions.map((session) => {
           // Tìm xem buổi này có bị thay đổi không (dùng scheduleChangesList từ fetch ở trên)
           const scheduleChange = scheduleChangesList.find(
-            change => 
-              change.status === 'approved' && 
-              change.makeupSchedule && 
-              new Date(change.originalDate).toDateString() === new Date(session.sessionDate).toDateString()
+            (change) =>
+              change.status === "approved" &&
+              change.makeupSchedule &&
+              new Date(change.originalDate).toDateString() ===
+                new Date(session.sessionDate).toDateString()
           );
-          
+
           return {
             session: session.sessionNumber,
-            date: scheduleChange ? scheduleChange.makeupSchedule.date : session.sessionDate,
+            date: scheduleChange
+              ? scheduleChange.makeupSchedule.date
+              : session.sessionDate,
             originalDate: scheduleChange ? session.sessionDate : null,
             isRescheduled: !!scheduleChange,
             present: session.presentCount,
             absent: session.totalStudents - session.presentCount,
             rate:
               session.totalStudents > 0
-                ? Math.round((session.presentCount / session.totalStudents) * 100)
+                ? Math.round(
+                    (session.presentCount / session.totalStudents) * 100
+                  )
                 : 0,
           };
         });
@@ -203,6 +293,13 @@ export default function TrainerClassDetail() {
 
       // Fetch session contents
       fetchSessionContents();
+
+      // Calculate session dates with schedule changes
+      const dates = calculateSessionDatesWithChanges(
+        classData,
+        scheduleChangesList
+      );
+      setSessionDates(dates);
     } catch (error) {
       console.error("Error fetching class data:", error);
       // Fallback to empty state
@@ -239,9 +336,9 @@ export default function TrainerClassDetail() {
   };
 
   const handleSaveSessionContent = (content) => {
-    setSessionContents(prev => ({
+    setSessionContents((prev) => ({
       ...prev,
-      [content.sessionNumber]: content
+      [content.sessionNumber]: content,
     }));
     fetchSessionContents(); // Refresh to get updated data
   };
@@ -365,18 +462,16 @@ export default function TrainerClassDetail() {
                   Điểm danh
                 </button>
                 <button
-                  onClick={() => handleAddSessionContent((classData?.currentSession || 0) + 1)}
+                  onClick={() => handleAddSessionContent(null)}
                   disabled={!classData || !classData._id}
                   className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
                     !classData || !classData._id
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : sessionContents[(classData?.currentSession || 0) + 1]
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
                       : "bg-purple-600 text-white hover:bg-purple-700"
                   }`}
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
-                  {sessionContents[(classData?.currentSession || 0) + 1] ? "Sửa nội dung" : "Thêm nội dung"}
+                  Thêm nội dung
                 </button>
               </div>
             </div>
@@ -632,12 +727,22 @@ export default function TrainerClassDetail() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <div>
-                            <div className={record.isRescheduled ? "text-orange-600 font-medium" : "text-gray-500"}>
-                              {new Date(record.date).toLocaleDateString("vi-VN")}
+                            <div
+                              className={
+                                record.isRescheduled
+                                  ? "text-orange-600 font-medium"
+                                  : "text-gray-500"
+                              }
+                            >
+                              {new Date(record.date).toLocaleDateString(
+                                "vi-VN"
+                              )}
                             </div>
                             {record.isRescheduled && record.originalDate && (
                               <div className="text-xs text-gray-400 line-through">
-                                {new Date(record.originalDate).toLocaleDateString("vi-VN")}
+                                {new Date(
+                                  record.originalDate
+                                ).toLocaleDateString("vi-VN")}
                               </div>
                             )}
                           </div>
@@ -658,7 +763,9 @@ export default function TrainerClassDetail() {
                                 {sessionContents[record.session].title}
                               </div>
                               <button
-                                onClick={() => handleAddSessionContent(record.session)}
+                                onClick={() =>
+                                  handleAddSessionContent(record.session)
+                                }
                                 className="text-blue-600 hover:text-blue-700 text-xs flex items-center"
                               >
                                 <BookOpen className="h-3 w-3 mr-1" />
@@ -667,7 +774,9 @@ export default function TrainerClassDetail() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleAddSessionContent(record.session)}
+                              onClick={() =>
+                                handleAddSessionContent(record.session)
+                              }
                               className="text-purple-600 hover:text-purple-700 text-xs flex items-center"
                             >
                               <Plus className="h-3 w-3 mr-1" />
@@ -709,11 +818,16 @@ export default function TrainerClassDetail() {
       </div>
 
       {/* Session Content Modal */}
-      {showContentModal && selectedSession && (
+      {showContentModal && (
         <SessionContentModal
           classId={classId}
           sessionNumber={selectedSession}
-          existingContent={sessionContents[selectedSession]}
+          classData={classData}
+          sessionDates={sessionDates}
+          scheduleChanges={scheduleChanges}
+          existingContent={
+            selectedSession ? sessionContents[selectedSession] : null
+          }
           onClose={() => {
             setShowContentModal(false);
             setSelectedSession(null);
