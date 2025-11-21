@@ -31,8 +31,10 @@ export const getAssignedClasses = async (req, res) => {
       classes: classes.map((classItem) => ({
         _id: classItem._id,
         className: classItem.className,
+        instructorName: classItem.instructorName,
         service: classItem.service?.serviceName || classItem.serviceName,
         schedule: formatScheduleDisplay(classItem.schedule),
+        rawSchedule: classItem.schedule, // Add raw schedule for conflict checking
         location: classItem.location,
         maxStudents: classItem.maxMembers,
         enrolledStudents: classItem.currentMembers || 0,
@@ -484,23 +486,57 @@ export const deleteTrainer = async (req, res) => {
 export const createScheduleChangeRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { classId, originalDate, requestedDate, reason, urgency } = req.body;
+    const {
+      classId,
+      originalDate,
+      requestedDate,
+      startTime,
+      endTime,
+      reason,
+      urgency,
+    } = req.body;
 
     console.log("Received request data:", {
       classId,
       originalDate,
       requestedDate,
+      startTime,
+      endTime,
       reason,
       urgency,
       userId,
     });
 
     // Kiểm tra dữ liệu đầu vào
-    if (!classId || !originalDate || !requestedDate || !reason) {
+    if (
+      !classId ||
+      !originalDate ||
+      !requestedDate ||
+      !startTime ||
+      !endTime ||
+      !reason
+    ) {
       return res.status(400).json({
         success: false,
         message:
-          "Vui lòng cung cấp đầy đủ thông tin: classId, originalDate, requestedDate, reason",
+          "Vui lòng cung cấp đầy đủ thông tin: classId, originalDate, requestedDate, startTime, endTime, reason",
+      });
+    }
+
+    // Validate time format
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "Định dạng thời gian không hợp lệ. Vui lòng sử dụng HH:mm",
+      });
+    }
+
+    // Validate endTime > startTime
+    if (startTime >= endTime) {
+      return res.status(400).json({
+        success: false,
+        message: "Giờ kết thúc phải sau giờ bắt đầu",
       });
     }
 
@@ -583,6 +619,12 @@ export const createScheduleChangeRequest = async (req, res) => {
       requestedDate: new Date(requestedDate),
       reason: reason.trim(),
       urgency: urgency || "medium",
+      makeupSchedule: {
+        date: new Date(requestedDate),
+        startTime: startTime,
+        endTime: endTime,
+        location: classItem.location || "Phòng tập chính",
+      },
     });
 
     console.log("Creating schedule change request:", scheduleChangeRequest);
@@ -927,4 +969,443 @@ const calculateSessionDates = (startDate, endDate, schedule, totalSessions) => {
   }
 
   return sessionDates;
+};
+
+/**
+ * Kiểm tra trùng lịch dạy của HLV
+ * GET /api/trainers/check-schedule-conflict
+ */
+export const checkTrainerScheduleConflict = async (req, res) => {
+  try {
+    const { trainerId, schedule, startDate, endDate, excludeClassId } =
+      req.query;
+
+    if (!trainerId || !schedule || !startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin: trainerId, schedule, startDate, endDate",
+      });
+    }
+
+    // Parse schedule từ frontend
+    // Format: [{dayOfWeek: 1, startTime: "14:00", endTime: "15:00"}]
+    let scheduleArray;
+    try {
+      scheduleArray = JSON.parse(schedule);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Định dạng schedule không hợp lệ",
+      });
+    }
+
+    // Tìm tất cả lớp học của trainer này (dùng instructorName)
+    const query = {
+      instructorName: trainerId,
+      status: { $in: ["upcoming", "ongoing"] },
+    };
+
+    // Loại trừ lớp đang edit (nếu có)
+    if (excludeClassId && mongoose.Types.ObjectId.isValid(excludeClassId)) {
+      query._id = { $ne: excludeClassId };
+    }
+
+    const trainerClasses = await Class.find(query);
+
+    console.log(`🔍 Checking schedule conflict for trainer: ${trainerId}`);
+    console.log(`📅 New schedule:`, scheduleArray);
+    console.log(`📚 Found ${trainerClasses.length} existing classes`);
+
+    // Helper function: Chuyển time string thành phút
+    const timeToMinutes = (timeStr) => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    // Helper function: Kiểm tra 2 khoảng thời gian có overlap không
+    const isTimeOverlap = (start1, end1, start2, end2) => {
+      const start1Min = timeToMinutes(start1);
+      const end1Min = timeToMinutes(end1);
+      const start2Min = timeToMinutes(start2);
+      const end2Min = timeToMinutes(end2);
+
+      return start1Min < end2Min && end1Min > start2Min;
+    };
+
+    // Kiểm tra từng slot thời gian mới
+    const conflicts = [];
+
+    for (const newSlot of scheduleArray) {
+      const newDayOfWeek = parseInt(newSlot.dayOfWeek);
+      const newStartTime = newSlot.startTime;
+      const newEndTime = newSlot.endTime;
+
+      // Kiểm tra với từng lớp học hiện tại
+      for (const existingClass of trainerClasses) {
+        if (!existingClass.schedule || existingClass.schedule.length === 0) {
+          continue;
+        }
+
+        // Kiểm tra từng slot của lớp hiện tại
+        for (const existingSlot of existingClass.schedule) {
+          const existingDayOfWeek = parseInt(existingSlot.dayOfWeek);
+
+          // Chỉ kiểm tra nếu cùng ngày trong tuần
+          if (existingDayOfWeek !== newDayOfWeek) {
+            continue;
+          }
+
+          const existingStartTime = existingSlot.startTime;
+          const existingEndTime = existingSlot.endTime;
+
+          // Kiểm tra overlap thời gian
+          if (
+            isTimeOverlap(
+              newStartTime,
+              newEndTime,
+              existingStartTime,
+              existingEndTime
+            )
+          ) {
+            const dayNames = [
+              "Chủ nhật",
+              "Thứ 2",
+              "Thứ 3",
+              "Thứ 4",
+              "Thứ 5",
+              "Thứ 6",
+              "Thứ 7",
+            ];
+
+            conflicts.push({
+              conflictClass: {
+                _id: existingClass._id,
+                className: existingClass.className,
+                serviceName: existingClass.serviceName,
+              },
+              conflictSlot: {
+                dayOfWeek: existingDayOfWeek,
+                dayName: dayNames[existingDayOfWeek],
+                startTime: existingStartTime,
+                endTime: existingEndTime,
+              },
+              newSlot: {
+                dayOfWeek: newDayOfWeek,
+                dayName: dayNames[newDayOfWeek],
+                startTime: newStartTime,
+                endTime: newEndTime,
+              },
+              overlapDescription: `${dayNames[newDayOfWeek]}: ${newStartTime}-${newEndTime} trùng với ${existingStartTime}-${existingEndTime}`,
+            });
+
+            console.log(`❌ Conflict found:`, conflicts[conflicts.length - 1]);
+          }
+        }
+      }
+    }
+
+    if (conflicts.length > 0) {
+      return res.status(200).json({
+        success: false,
+        hasConflict: true,
+        message: `Huấn luyện viên đã có ${conflicts.length} lịch dạy trùng`,
+        conflicts: conflicts,
+        details: conflicts
+          .map(
+            (c) =>
+              `Trùng với lớp "${c.conflictClass.className}" vào ${c.overlapDescription}`
+          )
+          .join("\n"),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      hasConflict: false,
+      message: "Không có xung đột lịch dạy",
+    });
+  } catch (error) {
+    console.error("❌ Error checking trainer schedule conflict:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi kiểm tra lịch dạy",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Kiểm tra trùng lịch dạy bù của HLV
+ * GET /api/trainers/check-makeup-schedule-conflict
+ */
+export const checkMakeupScheduleConflict = async (req, res) => {
+  try {
+    const { trainerId, requestedDate, startTime, endTime } = req.query;
+
+    if (!trainerId || !requestedDate || !startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Thiếu thông tin: trainerId, requestedDate, startTime, endTime",
+      });
+    }
+
+    const userId = req.user.id;
+
+    // Parse requested date
+    const makeupDate = new Date(requestedDate);
+    const dayOfWeek = makeupDate.getDay(); // 0 = CN, 1 = T2, ...
+
+    console.log(
+      `🔍 Checking makeup schedule conflict for trainer: ${trainerId}`
+    );
+    console.log(
+      `📅 Requested date: ${makeupDate.toDateString()}, Day: ${dayOfWeek}`
+    );
+    console.log(`🕒 Requested time: ${startTime} - ${endTime}`);
+
+    // 1. Tìm tất cả lớp học thường của trainer này
+    const trainerClasses = await Class.find({
+      instructorName: trainerId,
+      status: { $in: ["upcoming", "ongoing"] },
+      startDate: { $lte: makeupDate },
+      endDate: { $gte: makeupDate },
+    });
+
+    console.log(`📚 Found ${trainerClasses.length} active classes for trainer`);
+    if (trainerClasses.length > 0) {
+      console.log(
+        `📚 Classes:`,
+        trainerClasses.map((c) => ({
+          id: c._id,
+          name: c.className,
+          schedule: c.schedule,
+          startDate: c.startDate,
+          endDate: c.endDate,
+        }))
+      );
+    }
+
+    const conflicts = [];
+    const dayNames = [
+      "Chủ nhật",
+      "Thứ 2",
+      "Thứ 3",
+      "Thứ 4",
+      "Thứ 5",
+      "Thứ 6",
+      "Thứ 7",
+    ];
+
+    // Helper: Chuyển time string thành phút
+    const timeToMinutes = (timeStr) => {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+
+    // Helper: Kiểm tra time overlap
+    const isTimeOverlap = (start1, end1, start2, end2) => {
+      const start1Min = timeToMinutes(start1);
+      const end1Min = timeToMinutes(end1);
+      const start2Min = timeToMinutes(start2);
+      const end2Min = timeToMinutes(end2);
+      return start1Min < end2Min && end1Min > start2Min;
+    };
+
+    const requestedStartMin = timeToMinutes(startTime);
+    const requestedEndMin = timeToMinutes(endTime);
+
+    // 2. Kiểm tra trùng với lịch học thường
+    for (const classItem of trainerClasses) {
+      if (!classItem.schedule || classItem.schedule.length === 0) {
+        continue;
+      }
+
+      console.log(`\n📖 Checking class: ${classItem.className}`);
+
+      // Kiểm tra xem ngày makeup có trùng với schedule của lớp không
+      for (const slot of classItem.schedule) {
+        // Parse dayOfWeek từ string "Thứ 2" -> 1, "Chủ nhật" -> 0
+        let scheduleDayOfWeek;
+        if (typeof slot.dayOfWeek === "number") {
+          scheduleDayOfWeek = slot.dayOfWeek;
+        } else if (typeof slot.dayOfWeek === "string") {
+          const dayMap = {
+            "Chủ nhật": 0,
+            "Thứ 2": 1,
+            "Thứ 3": 2,
+            "Thứ 4": 3,
+            "Thứ 5": 4,
+            "Thứ 6": 5,
+            "Thứ 7": 6,
+          };
+          scheduleDayOfWeek = dayMap[slot.dayOfWeek];
+        }
+
+        console.log(
+          `  📅 Slot dayOfWeek (raw): ${
+            slot.dayOfWeek
+          } (type: ${typeof slot.dayOfWeek})`
+        );
+        console.log(`  📅 Parsed scheduleDayOfWeek: ${scheduleDayOfWeek}`);
+        console.log(`  📅 Requested dayOfWeek: ${dayOfWeek}`);
+        console.log(`  🕒 Slot time: ${slot.startTime} - ${slot.endTime}`);
+        console.log(`  🕒 Requested time: ${startTime} - ${endTime}`);
+        console.log(`  ✓ Same day? ${scheduleDayOfWeek === dayOfWeek}`);
+        console.log(
+          `  ✓ Time overlap? ${isTimeOverlap(
+            startTime,
+            endTime,
+            slot.startTime,
+            slot.endTime
+          )}`
+        );
+
+        // Nếu cùng ngày trong tuần VÀ trùng giờ
+        if (
+          scheduleDayOfWeek === dayOfWeek &&
+          isTimeOverlap(startTime, endTime, slot.startTime, slot.endTime)
+        ) {
+          // Tính overlap time
+          const overlapStart = Math.max(
+            requestedStartMin,
+            timeToMinutes(slot.startTime)
+          );
+          const overlapEnd = Math.min(
+            requestedEndMin,
+            timeToMinutes(slot.endTime)
+          );
+          const overlapMinutes = overlapEnd - overlapStart;
+
+          conflicts.push({
+            type: "regular_class",
+            conflictClass: {
+              _id: classItem._id,
+              className: classItem.className,
+              serviceName: classItem.serviceName,
+            },
+            conflictSlot: {
+              dayOfWeek: scheduleDayOfWeek,
+              dayName: dayNames[scheduleDayOfWeek],
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+            },
+            requestedTime: {
+              startTime,
+              endTime,
+            },
+            overlapMinutes,
+            message:
+              `Trùng lịch dạy thường lớp "${classItem.className}" vào ${dayNames[dayOfWeek]}\n` +
+              `Lịch hiện tại: ${slot.startTime} - ${slot.endTime}\n` +
+              `Lịch muốn đổi: ${startTime} - ${endTime}\n` +
+              `Trùng ${overlapMinutes} phút`,
+          });
+
+          console.log(
+            `❌ Conflict with regular class:`,
+            conflicts[conflicts.length - 1]
+          );
+        }
+      }
+    }
+
+    // 3. Kiểm tra trùng với lịch dạy bù đã được duyệt
+    const startOfDay = new Date(makeupDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(makeupDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const approvedMakeupRequests = await ScheduleChangeRequest.find({
+      trainer: userId,
+      status: "approved",
+      "makeupSchedule.date": {
+        $gte: startOfDay,
+        $lt: endOfDay,
+      },
+    }).populate("class", "className serviceName");
+
+    console.log(
+      `📋 Found ${approvedMakeupRequests.length} approved makeup schedules on this date`
+    );
+
+    for (const makeupReq of approvedMakeupRequests) {
+      if (makeupReq.makeupSchedule && makeupReq.makeupSchedule.date) {
+        const makeupStart = makeupReq.makeupSchedule.startTime;
+        const makeupEnd = makeupReq.makeupSchedule.endTime;
+
+        // Kiểm tra time overlap
+        if (isTimeOverlap(startTime, endTime, makeupStart, makeupEnd)) {
+          // Tính overlap time
+          const overlapStart = Math.max(
+            requestedStartMin,
+            timeToMinutes(makeupStart)
+          );
+          const overlapEnd = Math.min(
+            requestedEndMin,
+            timeToMinutes(makeupEnd)
+          );
+          const overlapMinutes = overlapEnd - overlapStart;
+
+          conflicts.push({
+            type: "makeup_class",
+            conflictClass: {
+              _id: makeupReq.class._id,
+              className: makeupReq.class.className,
+              serviceName: makeupReq.class.serviceName,
+            },
+            conflictSlot: {
+              date: makeupReq.makeupSchedule.date,
+              startTime: makeupStart,
+              endTime: makeupEnd,
+              location: makeupReq.makeupSchedule.location,
+            },
+            requestedTime: {
+              startTime,
+              endTime,
+            },
+            overlapMinutes,
+            message:
+              `Trùng lịch dạy bù lớp "${
+                makeupReq.class.className
+              }" vào ${new Date(
+                makeupReq.makeupSchedule.date
+              ).toLocaleDateString("vi-VN")}\n` +
+              `Lịch hiện tại: ${makeupStart} - ${makeupEnd}\n` +
+              `Lịch muốn đổi: ${startTime} - ${endTime}\n` +
+              `Trùng ${overlapMinutes} phút`,
+          });
+
+          console.log(
+            `❌ Conflict with makeup class:`,
+            conflicts[conflicts.length - 1]
+          );
+        }
+      }
+    }
+
+    // 4. Trả về kết quả
+    if (conflicts.length > 0) {
+      return res.status(200).json({
+        success: false,
+        hasConflict: true,
+        message: `HLV đã có ${conflicts.length} lịch dạy trùng vào ngày này`,
+        conflicts: conflicts,
+        details: conflicts.map((c) => c.message).join("\n"),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      hasConflict: false,
+      message: "Không có xung đột lịch dạy",
+    });
+  } catch (error) {
+    console.error("❌ Error checking makeup schedule conflict:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi kiểm tra lịch dạy bù",
+      error: error.message,
+    });
+  }
 };

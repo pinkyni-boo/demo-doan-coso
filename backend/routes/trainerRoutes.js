@@ -10,6 +10,8 @@ import {
   getClassFullSchedule,
   createScheduleChangeRequest,
   getScheduleChangeRequests,
+  checkTrainerScheduleConflict,
+  checkMakeupScheduleConflict,
 } from "../controllers/trainerController.js";
 import { verifyToken, verifyAdmin } from "../middleware/authMiddleware.js";
 
@@ -34,5 +36,19 @@ router.post(
   createScheduleChangeRequest
 );
 router.get("/schedule-change-requests", verifyToken, getScheduleChangeRequests);
+
+// Check trainer schedule conflict (for admin when creating/editing class)
+router.get(
+  "/check-schedule-conflict",
+  verifyToken,
+  checkTrainerScheduleConflict
+);
+
+// Check trainer makeup schedule conflict (for trainer when requesting schedule change)
+router.get(
+  "/check-makeup-schedule-conflict",
+  verifyToken,
+  checkMakeupScheduleConflict
+);
 
 export default router;

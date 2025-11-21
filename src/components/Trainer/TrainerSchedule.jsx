@@ -183,11 +183,15 @@ export default function TrainerSchedule() {
           classId: selectedClassForChange._id,
           originalDate: requestData.originalDate,
           requestedDate: requestData.requestedDate,
+          startTime: requestData.startTime,
+          endTime: requestData.endTime,
           reason: requestData.reason,
           urgency: requestData.urgency,
           className: selectedClassForChange.className,
           classSchedule: selectedClassForChange.schedule,
         };
+
+        console.log("📤 Submitting change request:", requestBody);
 
         const response = await axios.post(
           `http://localhost:5000/api/trainers/schedule-change-request`,

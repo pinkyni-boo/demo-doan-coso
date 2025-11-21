@@ -787,6 +787,10 @@ export const getStudentAttendanceReport = async (req, res) => {
  * 4. Xem & lọc theo trainer
  */
 export const getTrainerAttendanceReport = async (req, res) => {
+  // Import ScheduleChangeRequest model
+  const ScheduleChangeRequest = (
+    await import("../models/ScheduleChangeRequest.js")
+  ).default;
   try {
     const { trainerName } = req.params;
     const { startDate, endDate, classId } = req.query;
@@ -915,19 +919,65 @@ export const getTrainerAttendanceReport = async (req, res) => {
     // Calculate total statistics
     let totalSessionsHeld = 0;
     let totalStudentsPresent = 0;
-    const classDetails = trainerClasses.map((classItem) => {
+    const classDetails = [];
+    for (const classItem of trainerClasses) {
       const classId = classItem._id.toString();
       const sessions = classSessionMap[classId] || {};
       const sessionCount = Object.keys(sessions).length;
       totalSessionsHeld += sessionCount;
 
       let classPresentCount = 0;
+      // Chuẩn bị mảng sessionNumber -> sessionDate
+      const sessionArr = Object.values(sessions).sort(
+        (a, b) => b.sessionNumber - a.sessionNumber
+      );
+
+      // Lấy các yêu cầu đổi lịch đã duyệt cho lớp này
+      // (chỉ lấy status approved, makeupSchedule.date tồn tại)
+      // Map: originalDate (ISO) => makeupDate (ISO)
+      let makeupMap = {};
+      try {
+        const approvedMakeups = await ScheduleChangeRequest.find({
+          class: classItem._id,
+          status: "approved",
+          "makeupSchedule.date": { $exists: true, $ne: null },
+        });
+        approvedMakeups.forEach((req) => {
+          if (
+            req.originalDate &&
+            req.makeupSchedule &&
+            req.makeupSchedule.date
+          ) {
+            makeupMap[
+              new Date(req.makeupSchedule.date).toISOString().slice(0, 10)
+            ] = new Date(req.originalDate).toISOString().slice(0, 10);
+          }
+        });
+      } catch (e) {
+        makeupMap = {};
+      }
+
+      // Gắn cờ isMakeup cho từng session nếu là ngày makeup
+      const sessionsWithMakeup = sessionArr.map((session) => {
+        // session.sessionDate là ngày thực tế diễn ra
+        // Nếu sessionDate trùng với makeupSchedule.date thì là ngày makeup
+        const sessionDateStr = new Date(session.sessionDate)
+          .toISOString()
+          .slice(0, 10);
+        const originalDate = makeupMap[sessionDateStr] || null;
+        if (originalDate) {
+          return { ...session, isMakeup: true, originalDate };
+        } else {
+          return { ...session, isMakeup: false };
+        }
+      });
+
       Object.values(sessions).forEach((session) => {
         classPresentCount += session.presentCount;
         totalStudentsPresent += session.presentCount;
       });
 
-      return {
+      classDetails.push({
         classId: classItem._id,
         className: classItem.className,
         service: classItem.serviceName,
@@ -937,11 +987,9 @@ export const getTrainerAttendanceReport = async (req, res) => {
         sessionsHeld: sessionCount,
         status: classItem.status,
         totalStudentsPresent: classPresentCount,
-        sessions: Object.values(sessions).sort(
-          (a, b) => b.sessionNumber - a.sessionNumber
-        ),
-      };
-    });
+        sessions: sessionsWithMakeup,
+      });
+    }
 
     res.json({
       success: true,

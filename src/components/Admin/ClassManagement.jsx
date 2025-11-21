@@ -35,6 +35,10 @@ export default function ClassManagement() {
   const [statusFilter, setStatusFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
 
+  // State cho kiểm tra trùng lịch HLV
+  const [scheduleConflict, setScheduleConflict] = useState(null);
+  const [checkingSchedule, setCheckingSchedule] = useState(false);
+
   const [formData, setFormData] = useState({
     className: "",
     serviceId: "",
@@ -100,8 +104,111 @@ export default function ClassManagement() {
     }
   };
 
+  // Hàm kiểm tra trùng lịch HLV
+  const checkTrainerScheduleConflict = async () => {
+    if (
+      !formData.instructorName ||
+      !formData.schedule ||
+      formData.schedule.length === 0
+    ) {
+      setScheduleConflict(null);
+      return;
+    }
+
+    if (!formData.startDate || !formData.endDate) {
+      setScheduleConflict(null);
+      return;
+    }
+
+    // Validate schedule data
+    const hasInvalidSlot = formData.schedule.some(
+      (slot) => !slot.startTime || !slot.endTime
+    );
+    if (hasInvalidSlot) {
+      setScheduleConflict(null);
+      return;
+    }
+
+    setCheckingSchedule(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      // Chuyển đổi startDate/endDate từ dd/mm/yyyy sang ISO
+      const convertToISO = (dateStr) => {
+        if (!dateStr) return "";
+        const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        const match = dateStr.match(datePattern);
+        if (match) {
+          const [, day, month, year] = match;
+          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+        }
+        return dateStr;
+      };
+
+      const params = new URLSearchParams({
+        trainerId: formData.instructorName,
+        schedule: JSON.stringify(formData.schedule),
+        startDate: convertToISO(formData.startDate),
+        endDate: convertToISO(formData.endDate),
+      });
+
+      // Nếu đang edit lớp, loại trừ lớp hiện tại khỏi kiểm tra
+      if (editingClass?._id) {
+        params.append("excludeClassId", editingClass._id);
+      }
+
+      const response = await axios.get(
+        `http://localhost:5000/api/trainers/check-schedule-conflict?${params.toString()}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.data.hasConflict) {
+        setScheduleConflict(response.data);
+      } else {
+        setScheduleConflict(null);
+      }
+    } catch (error) {
+      console.error("Error checking trainer schedule:", error);
+      showNotification("❌ Không thể kiểm tra lịch dạy HLV", "error");
+    } finally {
+      setCheckingSchedule(false);
+    }
+  };
+
+  // Gọi kiểm tra khi thay đổi trainer, schedule, hoặc dates
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      checkTrainerScheduleConflict();
+    }, 800); // Debounce 800ms
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    formData.instructorName,
+    JSON.stringify(formData.schedule),
+    formData.startDate,
+    formData.endDate,
+  ]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Kiểm tra conflict trước khi submit
+    if (scheduleConflict && scheduleConflict.hasConflict) {
+      alert(
+        "❌ KHÔNG THỂ TẠO/CẬP NHẬT LỚP HỌC\n\n" +
+          "Lý do: Huấn luyện viên đã có lịch dạy trùng\n\n" +
+          "Chi tiết:\n" +
+          scheduleConflict.details +
+          "\n\n💡 Vui lòng:\n" +
+          "• Chọn thời gian khác cho lớp học\n" +
+          "• Hoặc chọn huấn luyện viên khác"
+      );
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
 
@@ -197,6 +304,7 @@ export default function ClassManagement() {
     });
     setEditingClass(null);
     setShowForm(false);
+    setScheduleConflict(null);
   };
 
   const handleEdit = (classItem) => {
@@ -612,6 +720,86 @@ export default function ClassManagement() {
                         "Chọn dịch vụ trước để xem huấn luyện viên phù hợp."
                       )}
                     </p>
+
+                    {/* Conflict Check Indicator */}
+                    {checkingSchedule && (
+                      <div className="mt-2 flex items-center text-sm text-blue-600">
+                        <svg
+                          className="animate-spin h-4 w-4 mr-2"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Đang kiểm tra lịch dạy...
+                      </div>
+                    )}
+
+                    {!checkingSchedule &&
+                      scheduleConflict &&
+                      scheduleConflict.hasConflict && (
+                        <div className="mt-2 p-3 bg-red-50 border border-red-300 rounded-lg">
+                          <div className="flex items-start">
+                            <svg
+                              className="h-5 w-5 text-red-500 mr-2 mt-0.5"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-red-800">
+                                ⚠️ Trùng lịch dạy!
+                              </p>
+                              <p className="text-xs text-red-700 mt-1">
+                                {scheduleConflict.details ||
+                                  "Huấn luyện viên đã có lịch dạy trùng với lịch bạn chọn."}
+                              </p>
+                              <p className="text-xs text-red-600 mt-2 font-medium">
+                                Vui lòng chọn thời gian khác hoặc chọn HLV khác.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                    {!checkingSchedule &&
+                      scheduleConflict &&
+                      !scheduleConflict.hasConflict &&
+                      formData.instructorId &&
+                      formData.schedule.length > 0 && (
+                        <div className="mt-2 flex items-center text-sm text-green-600">
+                          <svg
+                            className="h-4 w-4 mr-2"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          ✓ Lịch dạy hợp lệ - không có trung lịch
+                        </div>
+                      )}
                   </div>
 
                   <div>
@@ -815,7 +1003,7 @@ export default function ClassManagement() {
                         location: selectedRoom ? selectedRoom.roomName : "", // This is what gets saved to the database
                       });
                     }}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   >
                     <option value="">Chọn phòng tập</option>
