@@ -331,6 +331,14 @@ export default function TrainerClassDetail() {
   };
 
   const handleAddSessionContent = (sessionNumber) => {
+    if (!classData || !classData.totalSessions) {
+      console.error("Cannot open modal: classData not loaded", {
+        classData,
+        totalSessions: classData?.totalSessions,
+      });
+      alert("Không thể mở form. Vui lòng đợi dữ liệu lớp học tải xong.");
+      return;
+    }
     setSelectedSession(sessionNumber);
     setShowContentModal(true);
   };
@@ -451,9 +459,9 @@ export default function TrainerClassDetail() {
               <div className="flex space-x-3">
                 <button
                   onClick={handleTakeAttendance}
-                  disabled={!classData || !classData._id}
+                  disabled={!classData || !classData._id || loading}
                   className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                    !classData || !classData._id
+                    !classData || !classData._id || loading
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-green-600 text-white hover:bg-green-700"
                   }`}
@@ -463,12 +471,25 @@ export default function TrainerClassDetail() {
                 </button>
                 <button
                   onClick={() => handleAddSessionContent(null)}
-                  disabled={!classData || !classData._id}
+                  disabled={
+                    !classData ||
+                    !classData._id ||
+                    loading ||
+                    !classData.totalSessions
+                  }
                   className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                    !classData || !classData._id
+                    !classData ||
+                    !classData._id ||
+                    loading ||
+                    !classData.totalSessions
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-purple-600 text-white hover:bg-purple-700"
                   }`}
+                  title={
+                    !classData?.totalSessions
+                      ? "Không có thông tin số buổi học"
+                      : ""
+                  }
                 >
                   <BookOpen className="h-4 w-4 mr-2" />
                   Thêm nội dung

@@ -44,6 +44,18 @@ export default function SessionContentModal({
     }
   }, [existingContent]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log("SessionContentModal - Debug Info:", {
+      classId,
+      sessionNumber,
+      classData,
+      totalSessions: classData?.totalSessions,
+      sessionDatesLength: sessionDates?.length,
+      sessionDates,
+    });
+  }, [classId, sessionNumber, classData, sessionDates]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -137,33 +149,48 @@ export default function SessionContentModal({
                 disabled={!!existingContent}
               >
                 <option value="">-- Chọn buổi học --</option>
-                {Array.from(
-                  { length: classData?.totalSessions || 0 },
-                  (_, i) => i + 1
-                ).map((num) => {
-                  const session = sessionDates[num - 1];
-                  if (!session) return null;
+                {classData && classData.totalSessions > 0 ? (
+                  sessionDates && sessionDates.length > 0 ? (
+                    sessionDates.map((session, index) => {
+                      const num = index + 1;
+                      // Logic: displayDate = makeupDate ?? originalDate
+                      const displayDate =
+                        session.makeupDate || session.originalDate;
+                      const dateStr = displayDate
+                        ? new Date(displayDate).toLocaleDateString("vi-VN")
+                        : "";
+                      const hasMakeup = !!session.makeupDate;
 
-                  // Logic: displayDate = makeupDate ?? originalDate
-                  const displayDate =
-                    session.makeupDate || session.originalDate;
-                  const dateStr = displayDate
-                    ? new Date(displayDate).toLocaleDateString("vi-VN")
-                    : "";
-                  const hasMakeup = !!session.makeupDate;
-
-                  return (
-                    <option key={num} value={num}>
-                      Buổi {num}
-                      {dateStr ? ` - ${dateStr}` : ""}
-                      {hasMakeup ? " (Dạy bù)" : ""}
-                    </option>
-                  );
-                })}
+                      return (
+                        <option key={num} value={num}>
+                          Buổi {num}
+                          {dateStr ? ` - ${dateStr}` : ""}
+                          {hasMakeup ? " (Dạy bù)" : ""}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    Array.from(
+                      { length: classData.totalSessions },
+                      (_, i) => i + 1
+                    ).map((num) => (
+                      <option key={num} value={num}>
+                        Buổi {num}
+                      </option>
+                    ))
+                  )
+                ) : (
+                  <option disabled>Không có buổi học nào</option>
+                )}
               </select>
               {existingContent && (
                 <p className="text-xs text-gray-500 mt-1">
                   Không thể thay đổi buổi học khi sửa nội dung
+                </p>
+              )}
+              {(!classData || !classData.totalSessions) && (
+                <p className="text-xs text-red-500 mt-1">
+                  Lỗi: Không thể tải thông tin lớp học. Vui lòng thử lại.
                 </p>
               )}
             </div>

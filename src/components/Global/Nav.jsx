@@ -150,20 +150,20 @@ export default function NavBar({ user, setUser }) {
   const authenticatedNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
-    { name: "Lớp học", 
+    {
+      name: "Lớp học",
       dropdown: [
-      { name: "Lớp của tôi", path: "/my-classes" },
-      { name: "Đăng ký lớp", path: "/classes" },
+        { name: "Lớp của tôi", path: "/my-classes" },
+        { name: "Đăng ký lớp", path: "/classes" },
       ],
-     },
+    },
     { name: "Lịch tập", path: "/schedule" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
   ];
 
   const trainerNavLinks = [
-    { name: "CLB", path: "/club" },
-    { name: "Dịch vụ", path: "/services" },
+    { name: "Dashboard", path: "/trainer/dashboard" },
     { name: "Lịch dạy", path: "/trainer/schedule" },
     { name: "Lớp học", path: "/trainer/classes" },
     { name: "Báo cáo vấn đề", path: "/trainer/issue-report" },
@@ -173,16 +173,16 @@ export default function NavBar({ user, setUser }) {
   const adminNavLinks = [
     { name: "CLB", path: "/club" },
     { name: "Dịch vụ", path: "/services" },
-    { name: "Lớp học", 
+    {
+      name: "Lớp học",
       dropdown: [
-      { name: "Lớp của tôi", path: "/my-classes" },
-      { name: "Đăng ký lớp", path: "/classes" },
+        { name: "Lớp của tôi", path: "/my-classes" },
+        { name: "Đăng ký lớp", path: "/classes" },
       ],
-     },
+    },
     { name: "Lịch tập", path: "/schedule" },
     { name: "Thẻ thành viên", path: "/membership" },
     { name: "Thanh toán", path: "/payment" },
-    
   ];
 
   // Chọn menu dựa trên role và trạng thái đăng nhập
@@ -247,14 +247,17 @@ export default function NavBar({ user, setUser }) {
                       }}
                       onMouseLeave={() => {
                         const timeout = setTimeout(() => {
-                          setDropdownOpen({ ...dropdownOpen, [link.name]: false });
+                          setDropdownOpen({
+                            ...dropdownOpen,
+                            [link.name]: false,
+                          });
                         }, 300); // 300ms delay before closing
                         setDropdownTimeout(timeout);
                       }}
                     >
                       <button
                         className={`vintage-sans px-2 xl:px-4 py-2 rounded-lg font-medium transition-all duration-300 relative group whitespace-nowrap text-sm xl:text-base flex items-center ${
-                          link.dropdown.some(item => isActive(item.path))
+                          link.dropdown.some((item) => isActive(item.path))
                             ? isScrolled
                               ? "text-amber-700 bg-amber-50"
                               : "text-amber-100 bg-white/15 shadow-lg"
@@ -283,7 +286,7 @@ export default function NavBar({ user, setUser }) {
 
                       {/* Dropdown Menu with improved usability */}
                       {dropdownOpen[link.name] && (
-                        <div 
+                        <div
                           className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl shadow-2xl border border-amber-200/50 z-50 overflow-hidden backdrop-blur-sm"
                           onMouseEnter={() => {
                             if (dropdownTimeout) {
@@ -293,7 +296,10 @@ export default function NavBar({ user, setUser }) {
                           }}
                           onMouseLeave={() => {
                             const timeout = setTimeout(() => {
-                              setDropdownOpen({ ...dropdownOpen, [link.name]: false });
+                              setDropdownOpen({
+                                ...dropdownOpen,
+                                [link.name]: false,
+                              });
                             }, 200);
                             setDropdownTimeout(timeout);
                           }}
@@ -500,17 +506,6 @@ export default function NavBar({ user, setUser }) {
                             </Link>
                           )}
 
-                          {user.role === "trainer" && (
-                            <Link
-                              to="/trainer/dashboard"
-                              className="flex items-center px-4 py-3 vintage-sans text-stone-800 hover:bg-amber-50 transition-colors duration-200"
-                              onClick={() => setUserMenuOpen(false)}
-                            >
-                              <Calendar className="h-4 w-4 mr-3 text-amber-600" />
-                              Dashboard HLV
-                            </Link>
-                          )}
-
                           <div className="border-t border-amber-200/50 my-2"></div>
 
                           <button
@@ -575,12 +570,14 @@ export default function NavBar({ user, setUser }) {
                     // Mobile dropdown
                     <div>
                       <button
-                        onClick={() => setDropdownOpen({ 
-                          ...dropdownOpen, 
-                          [link.name]: !dropdownOpen[link.name] 
-                        })}
+                        onClick={() =>
+                          setDropdownOpen({
+                            ...dropdownOpen,
+                            [link.name]: !dropdownOpen[link.name],
+                          })
+                        }
                         className={`flex items-center justify-between w-full px-4 py-3 rounded-lg vintage-sans font-medium transition-colors duration-200 ${
-                          link.dropdown.some(item => isActive(item.path))
+                          link.dropdown.some((item) => isActive(item.path))
                             ? "bg-amber-50 text-amber-700"
                             : "text-stone-800 hover:bg-amber-50 hover:text-amber-700"
                         }`}
@@ -602,7 +599,7 @@ export default function NavBar({ user, setUser }) {
                           />
                         </svg>
                       </button>
-                      
+
                       {dropdownOpen[link.name] && (
                         <div className="ml-4 mt-2 space-y-1">
                           {link.dropdown.map((dropdownItem) => (

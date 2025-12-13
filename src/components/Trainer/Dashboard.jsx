@@ -347,7 +347,6 @@ export default function TrainerDashboard() {
             />
           </div>
 
-
           {/* Quick Actions */}
           <div className="mt-8">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -380,24 +379,6 @@ export default function TrainerDashboard() {
                   <AlertTriangle className="h-8 w-8 text-red-600 mb-2" />
                   <span className="text-sm font-medium text-gray-900">
                     Báo cáo vấn đề
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/services")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-colors"
-                >
-                  <Star className="h-8 w-8 text-purple-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Dịch vụ
-                  </span>
-                </button>
-                <button
-                  onClick={() => navigate("/club")}
-                  className="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-colors"
-                >
-                  <Users className="h-8 w-8 text-orange-600 mb-2" />
-                  <span className="text-sm font-medium text-gray-900">
-                    Câu lạc bộ
                   </span>
                 </button>
               </div>
@@ -481,7 +462,6 @@ export default function TrainerDashboard() {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
