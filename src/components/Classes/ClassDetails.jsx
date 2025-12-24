@@ -57,7 +57,6 @@ export default function ClassDetails() {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       fetchClassDetails();
-      // Fetch attendance if user is enrolled
       if (parsedUser) {
         fetchAttendanceHistory(parsedUser._id || parsedUser.id);
         fetchSessionContents();
@@ -97,9 +96,8 @@ export default function ClassDetails() {
       );
 
       if (response.data && Array.isArray(response.data)) {
-        // Filter to only show past sessions (up to today)
         const today = new Date();
-        today.setHours(23, 59, 59, 999); // End of today
+        today.setHours(23, 59, 59, 999); 
         
         const pastSessions = response.data.filter(record => {
           const sessionDate = new Date(record.sessionDate);
@@ -110,7 +108,6 @@ export default function ClassDetails() {
       }
     } catch (error) {
       console.error("Error fetching attendance history:", error);
-      // Don't show error toast, just log it
     } finally {
       setLoadingAttendance(false);
     }
@@ -303,7 +300,6 @@ export default function ClassDetails() {
       className="min-h-screen bg-gradient-to-br from-vintage-cream via-vintage-warm to-vintage-cream pt-24 pb-16"
     >
       <VintageContainer>
-        {/* Back Button */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -320,9 +316,7 @@ export default function ClassDetails() {
         </motion.div>
 
         <VintageGrid cols={{ lg: 3 }} gap={8}>
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -352,7 +346,6 @@ export default function ClassDetails() {
                   </div>
                 </div>
 
-                {/* Class Stats */}
                 <VintageGrid cols={{ sm: 2, md: 4 }} gap={4} className="mb-6">
                   {[
                     {
@@ -398,7 +391,6 @@ export default function ClassDetails() {
                   ))}
                 </VintageGrid>
 
-                {/* Progress Bar */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-2">
                     <VintageText variant="caption" className="text-vintage-neutral">
@@ -420,7 +412,6 @@ export default function ClassDetails() {
               </VintageCard>
             </motion.div>
 
-            {/* Service Image */}
             {classData.service?.image && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

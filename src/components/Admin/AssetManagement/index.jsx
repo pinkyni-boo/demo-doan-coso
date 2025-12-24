@@ -23,7 +23,10 @@ const AdminAssetManagement = () => {
   const [issueReports, setIssueReports] = useState([]);
   const [maintenanceSchedules, setMaintenanceSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("reports");
+  // Đọc tab đang mở từ localStorage, mặc định là 'reports'
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("assetManagementActiveTab") || "reports";
+  });
   const [selectedReport, setSelectedReport] = useState(null);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showReportDetail, setShowReportDetail] = useState(false);
@@ -55,6 +58,12 @@ const AdminAssetManagement = () => {
     fetchIssueReports();
     fetchMaintenanceSchedules();
   }, []);
+
+  // Khi đổi tab, lưu vào localStorage
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    localStorage.setItem("assetManagementActiveTab", tab);
+  };
 
   const fetchIssueReports = async () => {
     try {
@@ -224,7 +233,7 @@ const AdminAssetManagement = () => {
   const handleResolve = async (reportId) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(
+      const res = await axios.patch(
         `/api/issue-reports/${reportId}/resolve`,
         {
           resolutionNotes: "Đã xử lý xong vấn đề",
@@ -235,7 +244,24 @@ const AdminAssetManagement = () => {
       );
 
       toast.success("Đã đánh dấu báo cáo là đã giải quyết");
-      fetchIssueReports();
+
+      // Nếu API trả về report đã cập nhật, dùng dữ liệu mới
+      const updatedReport = res.data?.data?.report;
+      setIssueReports((prevReports) =>
+        prevReports.map((report) =>
+          report._id === reportId
+            ? updatedReport
+            : report
+        )
+      );
+      setStats((prevStats) => ({
+        ...prevStats,
+        resolvedReports: (prevStats.resolvedReports || 0) + 1,
+        pendingReports:
+          prevStats.pendingReports > 0
+            ? prevStats.pendingReports - 1
+            : prevStats.pendingReports,
+      }));
     } catch (error) {
       toast.error("Lỗi khi giải quyết báo cáo");
     }
@@ -244,7 +270,7 @@ const AdminAssetManagement = () => {
   const updateMaintenanceStatus = async (maintenanceId, status) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.patch(
+      const res = await axios.patch(
         `/api/maintenance/${maintenanceId}/status`,
         {
           status,
@@ -256,7 +282,16 @@ const AdminAssetManagement = () => {
       );
 
       toast.success(`Đã cập nhật trạng thái thành ${status}`);
-      fetchMaintenanceSchedules();
+
+      // Nếu API trả về lịch bảo trì đã cập nhật, dùng dữ liệu mới
+      const updatedSchedule = res.data?.data?.maintenance;
+      setMaintenanceSchedules((prevSchedules) =>
+        prevSchedules.map((schedule) =>
+          schedule._id === maintenanceId
+            ? updatedSchedule
+            : schedule
+        )
+      );
     } catch (error) {
       toast.error("Lỗi khi cập nhật trạng thái");
     }
@@ -427,7 +462,7 @@ const AdminAssetManagement = () => {
             <div className="border-b border-gray-200">
               <nav className="flex space-x-8 px-6">
                 <button
-                  onClick={() => setActiveTab("reports")}
+                  onClick={() => handleTabChange("reports")}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === "reports"
                       ? "border-red-500 text-red-600"
@@ -437,7 +472,7 @@ const AdminAssetManagement = () => {
                   Báo cáo vấn đề
                 </button>
                 <button
-                  onClick={() => setActiveTab("maintenance")}
+                  onClick={() => handleTabChange("maintenance")}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === "maintenance"
                       ? "border-red-500 text-red-600"
@@ -547,15 +582,23 @@ const AdminAssetManagement = () => {
                               </button>
                             )}
 
-                            {report.status !== "resolved" && (
-                              <button
-                                onClick={() => handleResolve(report._id)}
-                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                                Đã giải quyết
-                              </button>
-                            )}
+                            {/* Nút Đã giải quyết: chỉ hiện khi chưa resolved */}
+                            {report.status !== "resolved"
+                              ? (
+                                <button
+                                  onClick={() => handleResolve(report._id)}
+                                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center gap-1"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                  Đã giải quyết
+                                </button>
+                              )
+                              : (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded text-green-600 bg-green-100 text-sm font-medium">
+                                  <CheckCircle className="w-4 h-4" />
+                                  Đã giải quyết
+                                </span>
+                              )}
                           </div>
                         </div>
 

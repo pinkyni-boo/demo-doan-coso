@@ -441,6 +441,8 @@ export default function NavBar({ user, setUser }) {
                               <span className="truncate">
                                 {user.role === "admin"
                                   ? "Quản trị viên"
+                                  : user.role === "trainer"
+                                  ? "Huấn luyện viên"
                                   : "Thành viên"}
                               </span>
                             </>
@@ -653,6 +655,8 @@ export default function NavBar({ user, setUser }) {
                           ? `${user.membership.type} Member`
                           : user.role === "admin"
                           ? "Quản trị viên"
+                          : user.role === "trainer"
+                          ? "Huấn luyện viên"
                           : "Thành viên"}
                       </div>
                     </div>

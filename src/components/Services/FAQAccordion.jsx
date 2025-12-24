@@ -6,9 +6,9 @@ export default function FAQAccordion({ faqs }) {
 
   const toggleAccordion = (index) => {
     if (openIndex === index) {
-      setOpenIndex(null); // đóng nếu đang mở
+      setOpenIndex(null); 
     } else {
-      setOpenIndex(index); // mở nếu đang đóng
+      setOpenIndex(index); 
     }
   };
 
